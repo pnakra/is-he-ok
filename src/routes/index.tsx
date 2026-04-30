@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
-import { logSubmission } from "@/lib/submissionLogger";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -9,8 +8,17 @@ export const Route = createFileRoute("/")({
 
 type AppState = "empty" | "loading" | "output";
 
+interface Analysis {
+  body: string;       // paragraphs leading up to the closing question
+  closing: string;    // the closing question, set apart visually
+  standardClose: string; // hotline line shown below the divider
+}
+
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
+
+const STANDARD_CLOSE_FALLBACK =
+  "If anything you're experiencing ever feels physically unsafe, the National Domestic Violence Hotline is available 24/7 — 1-800-799-7233 or thehotline.org.";
 
 const LOADING_PHRASES = [
   "Reading it...",
@@ -18,15 +26,41 @@ const LOADING_PHRASES = [
   "Almost...",
 ];
 
-// Placeholder analysis. Replace with Anthropic API call once connected.
-function buildPlaceholderAnalysis(said: string): { body: string; closing: string } {
-  const trimmed = said.trim().slice(0, 140);
+// Split the model's text into body / closing question / standard close.
+// Heuristic: the standard close is the last paragraph that mentions the hotline
+// number; the closing question is the last non-empty paragraph before that
+// (preferring one that ends with "?").
+function parseAnalysis(text: string): Analysis {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length === 0) {
+    return { body: text.trim(), closing: "", standardClose: STANDARD_CLOSE_FALLBACK };
+  }
+
+  let standardClose = STANDARD_CLOSE_FALLBACK;
+  let workingParas = paragraphs;
+  const last = paragraphs[paragraphs.length - 1];
+  if (/1-?800-?799-?7233|thehotline\.org/i.test(last)) {
+    standardClose = last.replace(/^"|"$/g, "");
+    workingParas = paragraphs.slice(0, -1);
+  }
+
+  let closing = "";
+  if (workingParas.length > 0) {
+    const candidate = workingParas[workingParas.length - 1];
+    if (candidate.endsWith("?") || candidate.length < 200) {
+      closing = candidate;
+      workingParas = workingParas.slice(0, -1);
+    }
+  }
+
   return {
-    body:
-      `You read "${trimmed}" and something tightened. That tightening isn't an overreaction — it's information. ` +
-      `The sentence works by making you the one who has to manage it: the one who decides if it was a joke, the one who softens the next reply, the one who keeps the room calm. ` +
-      `That's the part that's sitting with you. Not the words exactly, but the small, quiet handoff of work — to you.`,
-    closing: "What would you do with the rest of your day if you didn't have to carry this?",
+    body: workingParas.join("\n\n"),
+    closing,
+    standardClose,
   };
 }
 
@@ -35,7 +69,7 @@ function Index() {
   const [said, setSaid] = useState("");
   const [context, setContext] = useState("");
   const [phraseIdx, setPhraseIdx] = useState(0);
-  const [analysis, setAnalysis] = useState<{ body: string; closing: string } | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [copied, setCopied] = useState(false);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -62,20 +96,29 @@ function Index() {
   async function handleSubmit() {
     if (!canSubmit) return;
     setState("loading");
-    // Simulate latency; replace with real Anthropic call later.
-    await new Promise((r) => setTimeout(r, 4500));
-    const result = buildPlaceholderAnalysis(said);
-    setAnalysis(result);
-    setState("output");
 
-    // Fire-and-forget anonymous logging. Never awaited; never surfaces errors.
-    void logSubmission({
-      sessionId: getSessionId(),
-      sentence: said,
-      context: context.trim() ? context : null,
-      analysis: `${result.body}\n\n${result.closing}`,
-      safetyFlagged: false,
-    });
+    let analysisText = "";
+    try {
+      const resp = await fetch("/api/public/analyze-sentence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sentence: said,
+          context: context.trim() ? context : undefined,
+          sessionId: getSessionId(),
+        }),
+      });
+      const data = (await resp.json()) as { analysis?: string };
+      analysisText =
+        data.analysis ??
+        "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+    } catch {
+      analysisText =
+        "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+    }
+
+    setAnalysis(parseAnalysis(analysisText));
+    setState("output");
   }
 
   function handleReset() {
