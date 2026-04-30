@@ -221,6 +221,7 @@ function Index() {
     track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
     setSaid("");
+    setSubmittedSentence("");
     setShowEmptyHint(false);
     setShowShortHint(false);
     setTimedOut(false);
