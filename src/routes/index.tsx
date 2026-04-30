@@ -18,7 +18,7 @@ interface Analysis {
   wearing: string;
   did: string;
   tactic: string | null;
-  closing: string;
+  closing?: string;
   resources: Resource[];
   safetyFlagged: boolean;
 }
