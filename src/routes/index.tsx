@@ -248,9 +248,13 @@ function Index() {
           <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
             Is He OK?
           </span>
-          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/70">
-            Override Labs
-          </span>
+          <Link
+            to="/about"
+            className="text-[13px] text-muted-foreground no-underline hover:underline"
+            style={{ fontFamily: "var(--font-sans)" }}
+          >
+            about
+          </Link>
         </div>
 
         {/* Main column */}
