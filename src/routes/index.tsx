@@ -25,8 +25,6 @@ const TIMEOUT_HINT = "That's taking longer than it should. Try again?";
 
 const SAID_MAX = 500;
 const SAID_COUNTER_AT = 400;
-const CTX_MAX = 300;
-const CTX_COUNTER_AT = 250;
 const REQUEST_TIMEOUT_MS = 15000;
 
 const SAFETY_LINE =
