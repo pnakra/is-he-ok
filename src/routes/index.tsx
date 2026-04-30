@@ -401,54 +401,80 @@ function Index() {
                   {submittedSentence}
                 </blockquote>
               )}
-              {analysis.body
-                .split(/\n{2,}/)
-                .filter((p) => p.trim().length > 0)
-                .map((para, i) => (
-                  <p
-                    key={i}
-                    className="text-[17px] text-foreground"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      lineHeight: 1.9,
-                      marginBottom: "28px",
-                    }}
-                  >
-                    {para}
-                  </p>
-                ))}
+              {/* Cards */}
+              <div className="flex flex-col gap-3">
+                <Card label="WHAT IT WAS WEARING" defaultOpen>
+                  {analysis.wearing}
+                </Card>
+                {analysis.did && (
+                  <Card label="WHAT IT DID">{analysis.did}</Card>
+                )}
+                {analysis.tactic && (
+                  <Card label="WHAT THIS IS">{analysis.tactic}</Card>
+                )}
+              </div>
 
-              {/* Closing question — Playfair, 20px, terracotta, alone on its lines */}
-              {analysis.closing && !analysis.safetyFlagged && (
+              {/* Closing question */}
+              {analysis.closing && (
                 <p
                   className="font-display text-[20px] leading-[1.4] text-primary [overflow-wrap:break-word] [hyphens:auto]"
-                  style={{ marginTop: "40px" }}
+                  style={{ marginTop: "32px" }}
                   aria-live="polite"
                 >
                   {analysis.closing}
                 </p>
               )}
 
-              {/* Standard close — hairline divider, secondary text */}
-              {!analysis.safetyFlagged && analysis.standardClose && (
-                <>
-                  <div
-                    className="h-px w-full"
-                    style={{ backgroundColor: "#2A2522", marginTop: "40px" }}
-                  />
-                  <p
-                    className="text-[13px] leading-[1.6] text-muted-foreground"
-                    style={{ fontFamily: "var(--font-sans)", marginTop: "16px" }}
+              {/* Resources */}
+              {analysis.resources.length > 0 && (
+                <section style={{ marginTop: "40px" }}>
+                  <h2
+                    className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+                    style={{ fontFamily: "var(--font-sans)" }}
                   >
-                    {analysis.standardClose}
-                  </p>
-                </>
+                    If You Want to Go Deeper
+                  </h2>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {analysis.resources.map((r) => (
+                      <a
+                        key={r.url}
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-[13px] text-primary no-underline transition-opacity hover:opacity-80"
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          border: "1px solid #C4784A",
+                          borderRadius: "100px",
+                          padding: "6px 14px",
+                          background: "transparent",
+                        }}
+                      >
+                        <span>{r.label}</span>
+                        <span aria-hidden="true">→</span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
               )}
 
-              {/* Quiet exit — centered text link */}
+              {/* Safety line + divider */}
+              <div style={{ marginTop: "48px" }}>
+                <div className="h-px w-full" style={{ backgroundColor: "#2A2522" }} />
+                <div className="pt-6 text-center">
+                  <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                    No account. Nothing saved about you.
+                  </p>
+                  <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                    If you're in immediate danger, call 911 or 1-800-799-7233.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quiet exit — centered text link, 32px below safety line */}
               <div
                 className="flex items-center justify-center"
-                style={{ marginTop: "48px" }}
+                style={{ marginTop: "32px" }}
               >
                 <button
                   type="button"
