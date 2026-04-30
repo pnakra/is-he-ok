@@ -92,10 +92,11 @@
 .quiet-input {
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #2A2522;
+  border-bottom: 1px solid #3A3532;
   border-radius: 0;
   outline: none;
   box-shadow: none;
+  resize: none;
   transition: border-color 200ms ease, box-shadow 200ms ease;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
@@ -107,8 +108,8 @@
   background: color-mix(in oklab, var(--color-muted-foreground) 40%, transparent);
 }
 .quiet-input:focus {
-  border-bottom-color: rgba(196, 120, 74, 0.4);
-  box-shadow: 0 1px 0 0 rgba(196, 120, 74, 0.4);
+  border-bottom-color: rgba(196, 120, 74, 0.6);
+  box-shadow: 0 1px 0 0 rgba(196, 120, 74, 0.6);
 }
 .quiet-input::placeholder {
   font-family: var(--font-serif);
