@@ -347,9 +347,10 @@ function Index() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="quiet-action"
+                  className="inline-flex min-h-[48px] items-center justify-center bg-primary px-8 py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ fontFamily: "var(--font-sans)" }}
                 >
-                  What did this do?
+                  is he ok?
                 </button>
                 {showEmptyHint && (
                   <p
