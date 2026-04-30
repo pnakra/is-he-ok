@@ -139,27 +139,80 @@ Return only a valid JSON object. No prose before or after it. No markdown. No ba
 "wearing" — what the sentence was disguised as and what that disguise did. 2-3 sentences.
 "did" — what the sentence actually produced: the authority shift, whether she was free. 2-3 sentences.
 "tactic" — if you recognize a specific named tactic (manufactured insecurity, withdrawal as punishment, embedded criticism, alternating warmth and coldness, frame control, testing how much she'll accept), name it in plain language in 1-2 sentences. If none clearly applies, return null.
-"resources" — exactly 2 resources relevant to what you found in this analysis. Choose from this list based on what the analysis identified:
+"resources" — return exactly 2 resources from this bank based on what the analysis identified. Match as specifically as possible to the tactic or disguise found. Never repeat the same resource twice in one response.
 
-If CARE disguise or manufactured insecurity or withdrawal as punishment:
+RESOURCE BANK:
+
+CARE DISGUISE / SURVEILLANCE / MANUFACTURED WORRY:
 {"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
+{"label": "Is it love or control? — loveisrespect.org", "url": "https://www.loveisrespect.org"}
 {"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
 
-If LOGIC disguise or frame control:
-{"label": "Why Does He Do That? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
+MANUFACTURED INSECURITY / DREAD GAME / JEALOUSY TACTICS:
+{"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
+{"label": "Why does he do that? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
+{"label": "Attached — on anxious and avoidant patterns", "url": "https://www.amazon.com/Attached-Science-Adult-Attachment-YouFind/dp/1585429139"}
+
+WITHDRAWAL AS PUNISHMENT / SILENT TREATMENT:
+{"label": "r/emotionalabuse", "url": "https://reddit.com/r/emotionalabuse"}
+{"label": "The silent treatment — Psychology Today", "url": "https://www.psychologytoday.com/us/blog/invisible-bruises/202101/the-silent-treatment-is-emotional-abuse"}
+{"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
+
+EMBEDDED CRITICISM / NEGGING:
+{"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
+{"label": "Love and self-worth — Kati Morton on YouTube", "url": "https://www.youtube.com/@KatiMorton"}
+{"label": "Is it love or control? — loveisrespect.org", "url": "https://www.loveisrespect.org"}
+
+MORALITY DISGUISE / DEBT MECHANISM:
+{"label": "Why does he do that? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
 {"label": "r/NarcissisticAbuse", "url": "https://reddit.com/r/NarcissisticAbuse"}
+{"label": "Lundy Bancroft on entitlement — YouTube", "url": "https://www.youtube.com/watch?v=T3FeVVPMEMk"}
 
-If MORALITY disguise or debt mechanism:
-{"label": "The hotline — chat available", "url": "https://www.thehotline.org"}
-{"label": "Lundy Bancroft on entitlement", "url": "https://www.youtube.com/watch?v=T3FeVVPMEMk"}
+LOGIC DISGUISE / FRAME CONTROL / GASLIGHTING:
+{"label": "Why does he do that? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
+{"label": "r/NarcissisticAbuse", "url": "https://reddit.com/r/NarcissisticAbuse"}
+{"label": "Gaslighting explained — Psych2Go on YouTube", "url": "https://www.youtube.com/@Psych2Go"}
 
-If EMPATHY disguise or alternating warmth and coldness:
+EMPATHY DISGUISE / GUILT LEDGER / CLOSENESS TEST:
 {"label": "r/limerence", "url": "https://reddit.com/r/limerence"}
 {"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
+{"label": "Anxious attachment — Thais Gibson on YouTube", "url": "https://www.youtube.com/@ThaisGibson"}
 
-If clean result:
-{"label": "r/relationships", "url": "https://reddit.com/r/relationships"}
+AUTHORITY DISGUISE / PROCEDURAL CONTROL:
+{"label": "Coercive control explained — Women's Aid", "url": "https://www.womensaid.org.uk/information-support/what-is-domestic-abuse/coercive-control"}
+{"label": "r/legaladvice", "url": "https://reddit.com/r/legaladvice"}
 {"label": "The hotline — chat available", "url": "https://www.thehotline.org"}
+
+ALTERNATING WARMTH AND COLDNESS / PUSH-PULL:
+{"label": "r/BPDlovedones", "url": "https://reddit.com/r/BPDlovedones"}
+{"label": "Thais Gibson on attachment — YouTube", "url": "https://www.youtube.com/@ThaisGibson"}
+{"label": "Attached — on anxious and avoidant patterns", "url": "https://www.amazon.com/Attached-Science-Adult-Attachment-YouFind/dp/1585429139"}
+
+TESTING HOW MUCH SHE'LL ACCEPT / BOUNDARY PROBING:
+{"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
+{"label": "Is it love or control? — loveisrespect.org", "url": "https://www.loveisrespect.org"}
+{"label": "Kati Morton on boundaries — YouTube", "url": "https://www.youtube.com/@KatiMorton"}
+
+IDENTITY EROSION / MEMORY REWRITING:
+{"label": "r/gaslighting", "url": "https://reddit.com/r/gaslight"}
+{"label": "The hotline — chat available", "url": "https://www.thehotline.org"}
+{"label": "Coercive control explained — Women's Aid", "url": "https://www.womensaid.org.uk/information-support/what-is-domestic-abuse/coercive-control"}
+
+MINOR / TEEN CONTEXT:
+{"label": "loveisrespect.org — built for teens", "url": "https://www.loveisrespect.org"}
+{"label": "r/teenrelationships", "url": "https://reddit.com/r/teenrelationships"}
+{"label": "Break the Cycle — dating abuse resources", "url": "https://www.breakthecycle.org"}
+
+CLEAN RESULT:
+{"label": "r/relationships", "url": "https://reddit.com/r/relationships"}
+{"label": "Is it love or control? — loveisrespect.org", "url": "https://www.loveisrespect.org"}
+
+ESCALATION / HIGH CONTROL / SAFETY CONCERN:
+{"label": "The hotline — chat available 24/7", "url": "https://www.thehotline.org"}
+{"label": "Safety planning — womenslaw.org", "url": "https://www.womenslaw.org/about-abuse/safety-planning"}
+{"label": "Coercive control explained — Women's Aid", "url": "https://www.womensaid.org.uk/information-support/what-is-domestic-abuse/coercive-control"}
+
+Select the 2 most specific matches. If the analysis identifies both a disguise and a specific tactic, prioritize the tactic category. If the ageGroup is "minor", always include one resource from the MINOR / TEEN CONTEXT bank as one of the two resources regardless of tactic. If the analysis suggests escalation or safety concern, always include one resource from the ESCALATION bank.
 
 Always return exactly 2 resources. Never return more.
 
