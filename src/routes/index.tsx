@@ -20,6 +20,14 @@ const FAILURE_TEXT =
   "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
 
 const EMPTY_HINT = "Type something he said — even just a few words.";
+const SHORT_HINT = "A little more context helps — what did he say exactly?";
+const TIMEOUT_HINT = "That's taking longer than it should. Try again?";
+
+const SAID_MAX = 500;
+const SAID_COUNTER_AT = 400;
+const CTX_MAX = 300;
+const CTX_COUNTER_AT = 250;
+const REQUEST_TIMEOUT_MS = 15000;
 
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
@@ -96,7 +104,10 @@ function Index() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [copied, setCopied] = useState(false);
   const [showEmptyHint, setShowEmptyHint] = useState(false);
+  const [showShortHint, setShowShortHint] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const outputRef = useRef<HTMLElement | null>(null);
 
   // Auto-grow primary textarea
   useEffect(() => {
@@ -121,7 +132,70 @@ function Index() {
     if (showEmptyHint && said.trim().length > 0) setShowEmptyHint(false);
   }, [said, showEmptyHint]);
 
+  // Show short hint when sentence is non-empty but very short.
+  useEffect(() => {
+    const len = said.trim().length;
+    setShowShortHint(len > 0 && len < 10);
+  }, [said]);
+
+  // Scroll output card into view on mobile when it appears.
+  useEffect(() => {
+    if (state === "output" && outputRef.current) {
+      outputRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [state]);
+
   const isLoading = state === "loading";
+
+  async function runSubmit(sentence: string, ctxRaw: string) {
+    setShowEmptyHint(false);
+    setTimedOut(false);
+    setState("loading");
+
+    const sessionId = getSessionId();
+    const ctx = ctxRaw.trim() ? ctxRaw : undefined;
+    track("iho_submission_started", {
+      sessionId,
+      hasContext: Boolean(ctx),
+      sentenceLength: sentence.trim().length,
+    });
+
+    let analysisText = "";
+    let safetyFlagged = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const resp = await fetch("/api/public/analyze-sentence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence, context: ctx, sessionId }),
+        signal: controller.signal,
+      });
+      const data = (await resp.json()) as {
+        analysis?: string;
+        safetyFlagged?: boolean;
+      };
+      analysisText = (data.analysis ?? "").trim() || FAILURE_TEXT;
+      safetyFlagged = data.safetyFlagged === true;
+      track("iho_submission_received", { sessionId, safetyFlagged });
+      if (safetyFlagged) track("iho_safety_flagged", { sessionId });
+    } catch (err) {
+      const isAbort = (err as { name?: string })?.name === "AbortError";
+      track("iho_submission_failed", { sessionId, timeout: isAbort });
+      if (isAbort) {
+        clearTimeout(timeoutId);
+        setTimedOut(true);
+        setState("empty");
+        return;
+      }
+      analysisText = FAILURE_TEXT;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
+    setState("output");
+  }
 
   async function handleSubmit() {
     if (isLoading) return;
@@ -130,40 +204,12 @@ function Index() {
       taRef.current?.focus();
       return;
     }
-    setShowEmptyHint(false);
-    setState("loading");
+    await runSubmit(said, context);
+  }
 
-    const sessionId = getSessionId();
-    const ctx = context.trim() ? context : undefined;
-    track("iho_submission_started", {
-      sessionId,
-      hasContext: Boolean(ctx),
-      sentenceLength: said.trim().length,
-    });
-
-    let analysisText = "";
-    let safetyFlagged = false;
-    try {
-      const resp = await fetch("/api/public/analyze-sentence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sentence: said, context: ctx, sessionId }),
-      });
-      const data = (await resp.json()) as {
-        analysis?: string;
-        safetyFlagged?: boolean;
-      };
-      analysisText = data.analysis ?? FAILURE_TEXT;
-      safetyFlagged = data.safetyFlagged === true;
-      track("iho_submission_received", { sessionId, safetyFlagged });
-      if (safetyFlagged) track("iho_safety_flagged", { sessionId });
-    } catch {
-      analysisText = FAILURE_TEXT;
-      track("iho_submission_failed", { sessionId });
-    }
-
-    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
-    setState("output");
+  function handleRetry() {
+    if (isLoading) return;
+    void runSubmit(said, context);
   }
 
   function handleReset() {
@@ -172,6 +218,8 @@ function Index() {
     setSaid("");
     setContext("");
     setShowEmptyHint(false);
+    setShowShortHint(false);
+    setTimedOut(false);
     setState("empty");
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -241,15 +289,32 @@ function Index() {
               id="said"
               ref={taRef}
               value={said}
-              onChange={(e) => setSaid(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value.slice(0, SAID_MAX);
+                setSaid(v);
+                if (timedOut) setTimedOut(false);
+              }}
               disabled={state === "loading"}
+              maxLength={SAID_MAX}
+              aria-label="Type what he said"
               placeholder="Type or paste what he said..."
               className={
-                "w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-5 text-[17px] leading-[1.6] text-foreground outline-none focus:ring-0 " +
+                "w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-5 text-[16px] sm:text-[17px] leading-[1.6] text-foreground outline-none focus:ring-0 " +
                 (state === "output" ? "min-h-[96px]" : "min-h-[160px]")
               }
               style={{ fontFamily: "var(--font-sans)" }}
             />
+            {said.length >= SAID_COUNTER_AT && (
+              <p
+                className="mt-1 text-right text-[11px] text-muted-foreground"
+                aria-live="polite"
+                style={{ fontFamily: "var(--font-sans)" }}
+              >
+                {said.length >= SAID_MAX
+                  ? "That's enough to work with."
+                  : `${SAID_MAX - said.length} characters left`}
+              </p>
+            )}
 
             <div className="mt-3">
               <label htmlFor="context" className="sr-only">
@@ -258,13 +323,26 @@ function Index() {
               <textarea
                 id="context"
                 value={context}
-                onChange={(e) => setContext(e.target.value)}
+                onChange={(e) => setContext(e.target.value.slice(0, CTX_MAX))}
                 disabled={state === "loading"}
+                maxLength={CTX_MAX}
+                aria-label="Optional context"
                 placeholder="Anything that helps — where you were, what had just happened. Optional."
                 rows={2}
-                className="w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-4 text-[14px] leading-[1.6] text-muted-foreground outline-none focus:text-foreground focus:ring-0"
+                className="w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-4 text-[16px] sm:text-[14px] leading-[1.6] text-muted-foreground outline-none focus:text-foreground focus:ring-0"
                 style={{ fontFamily: "var(--font-sans)" }}
               />
+              {context.length >= CTX_COUNTER_AT && (
+                <p
+                  className="mt-1 text-right text-[11px] text-muted-foreground"
+                  aria-live="polite"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  {context.length >= CTX_MAX
+                    ? "That's enough to work with."
+                    : `${CTX_MAX - context.length} characters left`}
+                </p>
+              )}
             </div>
 
             {state !== "output" && (
@@ -273,7 +351,7 @@ function Index() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="mt-3 block w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-3 block min-h-[52px] w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
                   style={{ fontFamily: "var(--font-sans)" }}
                 >
                   What did this do?
@@ -286,6 +364,32 @@ function Index() {
                     style={{ fontFamily: "var(--font-sans)" }}
                   >
                     {EMPTY_HINT}
+                  </p>
+                )}
+                {!showEmptyHint && showShortHint && (
+                  <p
+                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    aria-live="polite"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {SHORT_HINT}
+                  </p>
+                )}
+                {timedOut && (
+                  <p
+                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    role="status"
+                    aria-live="polite"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {TIMEOUT_HINT}{" "}
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      Try again
+                    </button>
                   </p>
                 )}
               </>
@@ -307,7 +411,12 @@ function Index() {
 
           {/* Output */}
           {state === "output" && analysis && (
-            <article className="animate-rise-in border border-border bg-[var(--color-surface)] p-8 sm:p-10">
+            <article
+              ref={outputRef}
+              role="region"
+              aria-label="Analysis"
+              className="animate-rise-in border border-border bg-[var(--color-surface)] p-8 sm:p-10"
+            >
               {analysis.body
                 .split(/\n{2,}/)
                 .filter((p) => p.trim().length > 0)
@@ -327,8 +436,9 @@ function Index() {
               {/* Closing question — terracotta, Playfair, 20px, 24px top margin */}
               {analysis.closing && !analysis.safetyFlagged && (
                 <p
-                  className="font-display text-[20px] leading-[1.35] text-primary"
+                  className="font-display text-[20px] leading-[1.35] text-primary [overflow-wrap:break-word] [hyphens:auto]"
                   style={{ marginTop: "24px" }}
+                  aria-live="polite"
                 >
                   {analysis.closing}
                 </p>
