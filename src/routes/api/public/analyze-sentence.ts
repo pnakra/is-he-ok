@@ -29,11 +29,46 @@ const SAFETY_KEYWORDS = [
   "hurt me",
 ];
 
-const SAFETY_RESPONSE =
-  "What you're describing sounds like you may be in danger right now. Please call 911 or the National Domestic Violence Hotline at 1-800-799-7233. You can also text START to 88788. They're available 24/7 and they understand exactly this kind of situation.";
+const SAFETY_RESPONSE: AnalysisPayload = {
+  wearing:
+    "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
+  did: "Please reach out to someone who can help you tonight.",
+  tactic: null,
+  closing: "Is there someone you trust you can text right now?",
+  resources: [
+    {
+      label: "National Domestic Violence Hotline — 1-800-799-7233",
+      url: "https://www.thehotline.org",
+    },
+  ],
+};
 
-const FAILURE_RESPONSE =
-  "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+const FAILURE_PAYLOAD: AnalysisPayload = {
+  wearing:
+    "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
+  did: "",
+  tactic: null,
+  closing: "Want to try sending it again?",
+  resources: [
+    {
+      label: "National Domestic Violence Hotline",
+      url: "https://www.thehotline.org",
+    },
+  ],
+};
+
+interface AnalysisResource {
+  label: string;
+  url: string;
+}
+
+interface AnalysisPayload {
+  wearing: string;
+  did: string;
+  tactic: string | null;
+  closing: string;
+  resources: AnalysisResource[];
+}
 
 const SYSTEM_PROMPT = `You are the analysis engine for Is He OK? — a tool built for girls and women who have a sentence, a text, a remark, a comment sitting in their chest that they can't stop thinking about. They've come here because something felt wrong and they don't know if they can trust that feeling.
 
