@@ -107,7 +107,8 @@ function Index() {
   const [said, setSaid] = useState("");
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [submittedSentence, setSubmittedSentence] = useState("");
+  
   const [showEmptyHint, setShowEmptyHint] = useState(false);
   const [showShortHint, setShowShortHint] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
@@ -155,6 +156,7 @@ function Index() {
   async function runSubmit(sentence: string) {
     setShowEmptyHint(false);
     setTimedOut(false);
+    setSubmittedSentence(sentence.trim());
     setState("loading");
 
     const sessionId = getSessionId();
@@ -219,6 +221,7 @@ function Index() {
     track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
     setSaid("");
+    setSubmittedSentence("");
     setShowEmptyHint(false);
     setShowShortHint(false);
     setTimedOut(false);
@@ -228,17 +231,6 @@ function Index() {
     }
   }
 
-  async function handleShare() {
-    try {
-      const url = typeof window !== "undefined" ? window.location.origin + "/" : "";
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      track("iho_share_clicked", { sessionId: getSessionId() });
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* no-op */
-    }
-  }
 
   const inputDimmed = state === "loading";
 
@@ -268,11 +260,11 @@ function Index() {
           }
         >
           {/* Input area — feels like writing on a dark page, not a form */}
+          {state !== "output" && (
           <div
             className={
               "transition-opacity duration-500 " +
-              (inputDimmed ? "opacity-50" : "opacity-100") +
-              (state === "output" ? " mb-8" : "")
+              (inputDimmed ? "opacity-50" : "opacity-100")
             }
             aria-hidden={state === "loading"}
           >
@@ -341,7 +333,7 @@ function Index() {
               </p>
             )}
 
-            {state !== "output" && (
+            {state === "empty" && (
               <div className="mt-6 text-center">
                 <button
                   type="button"
@@ -391,6 +383,7 @@ function Index() {
               </div>
             )}
           </div>
+          )}
 
           {/* Loading line */}
           {state === "loading" && (
@@ -413,6 +406,20 @@ function Index() {
               aria-label="Analysis"
               className="animate-rise-in mx-auto w-full max-w-[520px]"
             >
+              {submittedSentence && (
+                <blockquote
+                  className="font-display italic text-primary"
+                  style={{
+                    fontSize: "16px",
+                    lineHeight: 1.6,
+                    borderLeft: "2px solid #C4784A",
+                    paddingLeft: "16px",
+                    marginBottom: "32px",
+                  }}
+                >
+                  {submittedSentence}
+                </blockquote>
+              )}
               {analysis.body
                 .split(/\n{2,}/)
                 .filter((p) => p.trim().length > 0)
@@ -457,9 +464,9 @@ function Index() {
                 </>
               )}
 
-              {/* Quiet exit — text links, 48px below standard close */}
+              {/* Quiet exit — centered text link */}
               <div
-                className="flex items-center gap-6"
+                className="flex items-center justify-center"
                 style={{ marginTop: "48px" }}
               >
                 <button
@@ -470,14 +477,6 @@ function Index() {
                 >
                   Run another one
                 </button>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground hover:underline"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                >
-                  {copied ? "Link copied" : "Share"}
-                </button>
               </div>
             </article>
           )}
@@ -485,13 +484,19 @@ function Index() {
 
         {/* Footer safety line — only on empty/loading states */}
         {state !== "output" && (
-          <footer className="pt-12 text-center">
-            <p className="text-[11px] leading-[1.6] text-muted-foreground">
-              No account. Nothing saved about you.
-            </p>
-            <p className="text-[11px] leading-[1.6] text-muted-foreground">
-              If you're in immediate danger, call 911 or 1-800-799-7233.
-            </p>
+          <footer style={{ marginTop: "48px" }}>
+            <div
+              className="h-px w-full"
+              style={{ backgroundColor: "#2A2522" }}
+            />
+            <div className="pt-6 text-center">
+              <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                No account. Nothing saved about you.
+              </p>
+              <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                If you're in immediate danger, call 911 or 1-800-799-7233.
+              </p>
+            </div>
           </footer>
         )}
       </div>
