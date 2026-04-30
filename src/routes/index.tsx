@@ -267,22 +267,22 @@ function Index() {
         >
           {/* Prompt */}
           {state === "empty" && (
-            <header className="mb-10 text-center">
-              <h1 className="font-display text-[34px] leading-[1.15] text-foreground sm:text-[40px]">
+            <header className="mb-12 text-center">
+              <h1 className="font-display text-[38px] leading-[1.1] text-foreground sm:text-[46px]">
                 Something he said is sitting with you.
               </h1>
-              <p className="mt-4 font-display text-[18px] italic text-muted-foreground">
+              <p className="mt-5 font-display text-[18px] italic text-muted-foreground">
                 Type it here.
               </p>
             </header>
           )}
 
-          {/* Input area */}
+          {/* Input area — feels like writing on a dark page, not a form */}
           <div
             className={
               "transition-opacity duration-500 " +
               (inputDimmed ? "opacity-50" : "opacity-100") +
-              (state === "output" ? " mb-8" : "")
+              (state === "output" ? " mb-8" : " mt-12")
             }
             aria-hidden={state === "loading"}
           >
@@ -302,15 +302,22 @@ function Index() {
               maxLength={SAID_MAX}
               aria-label="Type what he said"
               placeholder="Type or paste what he said..."
+              rows={3}
               className={
-                "w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-5 text-[16px] sm:text-[17px] leading-[1.6] text-foreground outline-none focus:ring-0 " +
-                (state === "output" ? "min-h-[96px]" : "min-h-[160px]")
+                "quiet-input block w-full px-0 py-3 text-[17px] text-foreground " +
+                (state === "output" ? "min-h-[72px]" : "min-h-[120px]")
               }
-              style={{ fontFamily: "var(--font-sans)" }}
+              style={{
+                fontFamily: "var(--font-sans)",
+                lineHeight: 1.8,
+                // Cap visible height at ~6 lines (17px * 1.8 ≈ 30.6px) before scrolling.
+                maxHeight: `calc(${17 * 1.8 * 6}px + 1.5rem)`,
+                overflowY: "auto",
+              }}
             />
             {said.length >= SAID_COUNTER_AT && (
               <p
-                className="mt-1 text-right text-[11px] text-muted-foreground"
+                className="mt-2 text-right text-[11px] text-muted-foreground"
                 aria-live="polite"
                 style={{ fontFamily: "var(--font-sans)" }}
               >
@@ -320,49 +327,19 @@ function Index() {
               </p>
             )}
 
-            <div className="mt-3">
-              <label htmlFor="context" className="sr-only">
-                Optional context
-              </label>
-              <textarea
-                id="context"
-                value={context}
-                onChange={(e) => setContext(e.target.value.slice(0, CTX_MAX))}
-                disabled={state === "loading"}
-                maxLength={CTX_MAX}
-                aria-label="Optional context"
-                placeholder="Anything that helps — where you were, what had just happened. Optional."
-                rows={2}
-                className="w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-4 text-[16px] sm:text-[14px] leading-[1.6] text-muted-foreground outline-none focus:text-foreground focus:ring-0"
-                style={{ fontFamily: "var(--font-sans)" }}
-              />
-              {context.length >= CTX_COUNTER_AT && (
-                <p
-                  className="mt-1 text-right text-[11px] text-muted-foreground"
-                  aria-live="polite"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                >
-                  {context.length >= CTX_MAX
-                    ? "That's enough to work with."
-                    : `${CTX_MAX - context.length} characters left`}
-                </p>
-              )}
-            </div>
-
             {state !== "output" && (
-              <>
+              <div className="mt-8">
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="mt-3 block min-h-[52px] w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
-                  style={{ fontFamily: "var(--font-sans)" }}
+                  className="quiet-action"
                 >
                   What did this do?
                 </button>
                 {showEmptyHint && (
                   <p
-                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
                     role="status"
                     aria-live="polite"
                     style={{ fontFamily: "var(--font-sans)" }}
@@ -372,7 +349,7 @@ function Index() {
                 )}
                 {!showEmptyHint && showShortHint && (
                   <p
-                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
                     aria-live="polite"
                     style={{ fontFamily: "var(--font-sans)" }}
                   >
@@ -381,7 +358,7 @@ function Index() {
                 )}
                 {timedOut && (
                   <p
-                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
                     role="status"
                     aria-live="polite"
                     style={{ fontFamily: "var(--font-sans)" }}
@@ -396,7 +373,7 @@ function Index() {
                     </button>
                   </p>
                 )}
-              </>
+              </div>
             )}
           </div>
 
