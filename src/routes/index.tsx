@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -9,10 +10,16 @@ export const Route = createFileRoute("/")({
 type AppState = "empty" | "loading" | "output";
 
 interface Analysis {
-  body: string;       // paragraphs leading up to the closing question
-  closing: string;    // the closing question, set apart visually
-  standardClose: string; // hotline line shown below the divider
+  body: string;            // paragraphs leading up to the closing question
+  closing: string;         // the closing question, set apart visually
+  standardClose: string;   // hotline line shown below the divider
+  safetyFlagged: boolean;  // true => safety pre-filter response, no closing q.
 }
+
+const FAILURE_TEXT =
+  "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+
+const EMPTY_HINT = "Type something he said — even just a few words.";
 
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
@@ -26,42 +33,59 @@ const LOADING_PHRASES = [
   "Almost...",
 ];
 
-// Split the model's text into body / closing question / standard close.
-// Heuristic: the standard close is the last paragraph that mentions the hotline
-// number; the closing question is the last non-empty paragraph before that
-// (preferring one that ends with "?").
-function parseAnalysis(text: string): Analysis {
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
+// Detect the standard close (hotline line) and split it off the body.
+function splitStandardClose(text: string): { rest: string; standardClose: string } {
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   if (paragraphs.length === 0) {
-    return { body: text.trim(), closing: "", standardClose: STANDARD_CLOSE_FALLBACK };
+    return { rest: text.trim(), standardClose: STANDARD_CLOSE_FALLBACK };
   }
-
-  let standardClose = STANDARD_CLOSE_FALLBACK;
-  let workingParas = paragraphs;
   const last = paragraphs[paragraphs.length - 1];
   if (/1-?800-?799-?7233|thehotline\.org/i.test(last)) {
-    standardClose = last.replace(/^"|"$/g, "");
-    workingParas = paragraphs.slice(0, -1);
+    return {
+      rest: paragraphs.slice(0, -1).join("\n\n"),
+      standardClose: last.replace(/^"|"$/g, ""),
+    };
+  }
+  return { rest: paragraphs.join("\n\n"), standardClose: STANDARD_CLOSE_FALLBACK };
+}
+
+// Find the last sentence ending in "?" inside `text`, peel it off the body.
+function splitClosingQuestion(text: string): { body: string; closing: string } {
+  const trimmed = text.trim();
+  if (!trimmed) return { body: "", closing: "" };
+
+  const lastQ = trimmed.lastIndexOf("?");
+  if (lastQ === -1) return { body: trimmed, closing: "" };
+
+  const tail = trimmed.slice(lastQ + 1).trim();
+  if (tail.length > 0) return { body: trimmed, closing: "" };
+
+  // Walk forward to find the start of the sentence containing the last "?".
+  let start = 0;
+  const boundary = /[.!?]\s+(?=[A-Z"'(])|\n{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = boundary.exec(trimmed)) !== null) {
+    if (m.index >= lastQ) break;
+    start = m.index + m[0].length;
   }
 
-  let closing = "";
-  if (workingParas.length > 0) {
-    const candidate = workingParas[workingParas.length - 1];
-    if (candidate.endsWith("?") || candidate.length < 200) {
-      closing = candidate;
-      workingParas = workingParas.slice(0, -1);
-    }
-  }
+  const closing = trimmed.slice(start, lastQ + 1).trim();
+  const body = trimmed.slice(0, start).trim();
 
-  return {
-    body: workingParas.join("\n\n"),
-    closing,
-    standardClose,
-  };
+  if (!body || closing.length > 280) {
+    return { body: trimmed, closing: "" };
+  }
+  return { body, closing };
+}
+
+function parseAnalysis(text: string, safetyFlagged: boolean): Analysis {
+  if (safetyFlagged) {
+    // Safety response is one block; it already contains the hotline resources.
+    return { body: text.trim(), closing: "", standardClose: "", safetyFlagged: true };
+  }
+  const { rest, standardClose } = splitStandardClose(text);
+  const { body, closing } = splitClosingQuestion(rest);
+  return { body, closing, standardClose, safetyFlagged: false };
 }
 
 function Index() {
