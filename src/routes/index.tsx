@@ -436,8 +436,9 @@ function Index() {
               {/* Closing question — terracotta, Playfair, 20px, 24px top margin */}
               {analysis.closing && !analysis.safetyFlagged && (
                 <p
-                  className="font-display text-[20px] leading-[1.35] text-primary"
+                  className="font-display text-[20px] leading-[1.35] text-primary [overflow-wrap:break-word] [hyphens:auto]"
                   style={{ marginTop: "24px" }}
+                  aria-live="polite"
                 >
                   {analysis.closing}
                 </p>
