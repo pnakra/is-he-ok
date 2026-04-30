@@ -384,13 +384,13 @@ function Index() {
             </div>
           )}
 
-          {/* Output */}
+          {/* Output — sits directly on the page, no card */}
           {state === "output" && analysis && (
             <article
               ref={outputRef}
               role="region"
               aria-label="Analysis"
-              className="animate-rise-in border border-border bg-[var(--color-surface)] p-8 sm:p-10"
+              className="animate-rise-in mx-auto w-full max-w-[520px]"
             >
               {analysis.body
                 .split(/\n{2,}/)
@@ -398,40 +398,66 @@ function Index() {
                 .map((para, i) => (
                   <p
                     key={i}
-                    className={
-                      "text-[16px] leading-[1.7] text-foreground " +
-                      (i > 0 ? "mt-5" : "")
-                    }
-                    style={{ fontFamily: "var(--font-sans)" }}
+                    className="text-[17px] text-foreground"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      lineHeight: 1.9,
+                      marginBottom: "28px",
+                    }}
                   >
                     {para}
                   </p>
                 ))}
 
-              {/* Closing question — terracotta, Playfair, 20px, 24px top margin */}
+              {/* Closing question — Playfair, 20px, terracotta, alone on its lines */}
               {analysis.closing && !analysis.safetyFlagged && (
                 <p
-                  className="font-display text-[20px] leading-[1.35] text-primary [overflow-wrap:break-word] [hyphens:auto]"
-                  style={{ marginTop: "24px" }}
+                  className="font-display text-[20px] leading-[1.4] text-primary [overflow-wrap:break-word] [hyphens:auto]"
+                  style={{ marginTop: "40px" }}
                   aria-live="polite"
                 >
                   {analysis.closing}
                 </p>
               )}
 
-              {/* Standard close — only when not a safety response (the safety
-                  message already carries its own resources inline). */}
+              {/* Standard close — hairline divider, secondary text */}
               {!analysis.safetyFlagged && analysis.standardClose && (
                 <>
-                  <div className="mt-8 h-px w-full" style={{ backgroundColor: "#2A2522" }} />
+                  <div
+                    className="h-px w-full"
+                    style={{ backgroundColor: "#2A2522", marginTop: "40px" }}
+                  />
                   <p
-                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
-                    style={{ fontFamily: "var(--font-sans)" }}
+                    className="text-[13px] leading-[1.6] text-muted-foreground"
+                    style={{ fontFamily: "var(--font-sans)", marginTop: "16px" }}
                   >
                     {analysis.standardClose}
                   </p>
                 </>
               )}
+
+              {/* Quiet exit — text links, 48px below standard close */}
+              <div
+                className="flex items-center gap-6"
+                style={{ marginTop: "48px" }}
+              >
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground hover:underline"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  Run another one
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground hover:underline"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  {copied ? "Link copied" : "Share"}
+                </button>
+              </div>
             </article>
           )}
 
