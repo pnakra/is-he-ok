@@ -344,7 +344,7 @@ function Index() {
               </p>
             )}
 
-            {state !== "output" && (
+            {state === "empty" && (
               <div className="mt-6 text-center">
                 <button
                   type="button"
