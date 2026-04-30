@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -9,10 +10,16 @@ export const Route = createFileRoute("/")({
 type AppState = "empty" | "loading" | "output";
 
 interface Analysis {
-  body: string;       // paragraphs leading up to the closing question
-  closing: string;    // the closing question, set apart visually
-  standardClose: string; // hotline line shown below the divider
+  body: string;            // paragraphs leading up to the closing question
+  closing: string;         // the closing question, set apart visually
+  standardClose: string;   // hotline line shown below the divider
+  safetyFlagged: boolean;  // true => safety pre-filter response, no closing q.
 }
+
+const FAILURE_TEXT =
+  "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+
+const EMPTY_HINT = "Type something he said — even just a few words.";
 
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
@@ -26,42 +33,59 @@ const LOADING_PHRASES = [
   "Almost...",
 ];
 
-// Split the model's text into body / closing question / standard close.
-// Heuristic: the standard close is the last paragraph that mentions the hotline
-// number; the closing question is the last non-empty paragraph before that
-// (preferring one that ends with "?").
-function parseAnalysis(text: string): Analysis {
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
+// Detect the standard close (hotline line) and split it off the body.
+function splitStandardClose(text: string): { rest: string; standardClose: string } {
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   if (paragraphs.length === 0) {
-    return { body: text.trim(), closing: "", standardClose: STANDARD_CLOSE_FALLBACK };
+    return { rest: text.trim(), standardClose: STANDARD_CLOSE_FALLBACK };
   }
-
-  let standardClose = STANDARD_CLOSE_FALLBACK;
-  let workingParas = paragraphs;
   const last = paragraphs[paragraphs.length - 1];
   if (/1-?800-?799-?7233|thehotline\.org/i.test(last)) {
-    standardClose = last.replace(/^"|"$/g, "");
-    workingParas = paragraphs.slice(0, -1);
+    return {
+      rest: paragraphs.slice(0, -1).join("\n\n"),
+      standardClose: last.replace(/^"|"$/g, ""),
+    };
+  }
+  return { rest: paragraphs.join("\n\n"), standardClose: STANDARD_CLOSE_FALLBACK };
+}
+
+// Find the last sentence ending in "?" inside `text`, peel it off the body.
+function splitClosingQuestion(text: string): { body: string; closing: string } {
+  const trimmed = text.trim();
+  if (!trimmed) return { body: "", closing: "" };
+
+  const lastQ = trimmed.lastIndexOf("?");
+  if (lastQ === -1) return { body: trimmed, closing: "" };
+
+  const tail = trimmed.slice(lastQ + 1).trim();
+  if (tail.length > 0) return { body: trimmed, closing: "" };
+
+  // Walk forward to find the start of the sentence containing the last "?".
+  let start = 0;
+  const boundary = /[.!?]\s+(?=[A-Z"'(])|\n{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = boundary.exec(trimmed)) !== null) {
+    if (m.index >= lastQ) break;
+    start = m.index + m[0].length;
   }
 
-  let closing = "";
-  if (workingParas.length > 0) {
-    const candidate = workingParas[workingParas.length - 1];
-    if (candidate.endsWith("?") || candidate.length < 200) {
-      closing = candidate;
-      workingParas = workingParas.slice(0, -1);
-    }
-  }
+  const closing = trimmed.slice(start, lastQ + 1).trim();
+  const body = trimmed.slice(0, start).trim();
 
-  return {
-    body: workingParas.join("\n\n"),
-    closing,
-    standardClose,
-  };
+  if (!body || closing.length > 280) {
+    return { body: trimmed, closing: "" };
+  }
+  return { body, closing };
+}
+
+function parseAnalysis(text: string, safetyFlagged: boolean): Analysis {
+  if (safetyFlagged) {
+    // Safety response is one block; it already contains the hotline resources.
+    return { body: text.trim(), closing: "", standardClose: "", safetyFlagged: true };
+  }
+  const { rest, standardClose } = splitStandardClose(text);
+  const { body, closing } = splitClosingQuestion(rest);
+  return { body, closing, standardClose, safetyFlagged: false };
 }
 
 function Index() {
@@ -71,6 +95,7 @@ function Index() {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showEmptyHint, setShowEmptyHint] = useState(false);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Auto-grow primary textarea
@@ -91,39 +116,66 @@ function Index() {
     return () => clearInterval(id);
   }, [state]);
 
-  const canSubmit = said.trim().length > 0 && state !== "loading";
+  // Hide the empty-state hint as soon as she starts typing.
+  useEffect(() => {
+    if (showEmptyHint && said.trim().length > 0) setShowEmptyHint(false);
+  }, [said, showEmptyHint]);
+
+  const isLoading = state === "loading";
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+    if (isLoading) return;
+    if (said.trim().length === 0) {
+      setShowEmptyHint(true);
+      taRef.current?.focus();
+      return;
+    }
+    setShowEmptyHint(false);
     setState("loading");
 
+    const sessionId = getSessionId();
+    const ctx = context.trim() ? context : undefined;
+    track("iho_submission_started", {
+      sessionId,
+      hasContext: Boolean(ctx),
+      sentenceLength: said.trim().length,
+    });
+
     let analysisText = "";
+    let safetyFlagged = false;
     try {
       const resp = await fetch("/api/public/analyze-sentence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sentence: said,
-          context: context.trim() ? context : undefined,
-          sessionId: getSessionId(),
-        }),
+        body: JSON.stringify({ sentence: said, context: ctx, sessionId }),
       });
-      const data = (await resp.json()) as { analysis?: string };
-      analysisText =
-        data.analysis ??
-        "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+      const data = (await resp.json()) as {
+        analysis?: string;
+        safetyFlagged?: boolean;
+      };
+      analysisText = data.analysis ?? FAILURE_TEXT;
+      safetyFlagged = data.safetyFlagged === true;
+      track("iho_submission_received", { sessionId, safetyFlagged });
+      if (safetyFlagged) track("iho_safety_flagged", { sessionId });
     } catch {
-      analysisText =
-        "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+      analysisText = FAILURE_TEXT;
+      track("iho_submission_failed", { sessionId });
     }
 
-    setAnalysis(parseAnalysis(analysisText));
+    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
     setState("output");
   }
 
   function handleReset() {
+    track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
+    setSaid("");
+    setContext("");
+    setShowEmptyHint(false);
     setState("empty");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   async function handleShare() {
@@ -131,6 +183,7 @@ function Index() {
       const url = typeof window !== "undefined" ? window.location.origin + "/" : "";
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      track("iho_share_clicked", { sessionId: getSessionId() });
       setTimeout(() => setCopied(false), 1800);
     } catch {
       /* no-op */
@@ -215,15 +268,27 @@ function Index() {
             </div>
 
             {state !== "output" && (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="mt-3 block w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ fontFamily: "var(--font-sans)" }}
-              >
-                What did this do?
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="mt-3 block w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  What did this do?
+                </button>
+                {showEmptyHint && (
+                  <p
+                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    role="status"
+                    aria-live="polite"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {EMPTY_HINT}
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -259,17 +324,29 @@ function Index() {
                   </p>
                 ))}
 
-              {analysis.closing && (
-                <p className="mt-8 font-display text-[22px] leading-[1.35] text-primary sm:text-[24px]">
+              {/* Closing question — terracotta, Playfair, 20px, 24px top margin */}
+              {analysis.closing && !analysis.safetyFlagged && (
+                <p
+                  className="font-display text-[20px] leading-[1.35] text-primary"
+                  style={{ marginTop: "24px" }}
+                >
                   {analysis.closing}
                 </p>
               )}
 
-              <div className="mt-8 h-px w-full bg-border" />
-
-              <p className="mt-4 text-[11px] leading-[1.6] text-muted-foreground">
-                {analysis.standardClose}
-              </p>
+              {/* Standard close — only when not a safety response (the safety
+                  message already carries its own resources inline). */}
+              {!analysis.safetyFlagged && analysis.standardClose && (
+                <>
+                  <div className="mt-8 h-px w-full" style={{ backgroundColor: "#2A2522" }} />
+                  <p
+                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {analysis.standardClose}
+                  </p>
+                </>
+              )}
             </article>
           )}
 
