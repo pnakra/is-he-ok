@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      iho_submissions: {
+        Row: {
+          analysis: string | null
+          context: string | null
+          created_at: string
+          id: string
+          safety_flagged: boolean
+          sentence: string
+          session_id: string
+        }
+        Insert: {
+          analysis?: string | null
+          context?: string | null
+          created_at?: string
+          id?: string
+          safety_flagged?: boolean
+          sentence: string
+          session_id: string
+        }
+        Update: {
+          analysis?: string | null
+          context?: string | null
+          created_at?: string
+          id?: string
+          safety_flagged?: boolean
+          sentence?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
