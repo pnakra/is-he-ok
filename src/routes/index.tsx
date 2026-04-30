@@ -268,15 +268,27 @@ function Index() {
             </div>
 
             {state !== "output" && (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="mt-3 block w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ fontFamily: "var(--font-sans)" }}
-              >
-                What did this do?
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="mt-3 block w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  What did this do?
+                </button>
+                {showEmptyHint && (
+                  <p
+                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    role="status"
+                    aria-live="polite"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {EMPTY_HINT}
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -312,17 +324,29 @@ function Index() {
                   </p>
                 ))}
 
-              {analysis.closing && (
-                <p className="mt-8 font-display text-[22px] leading-[1.35] text-primary sm:text-[24px]">
+              {/* Closing question — terracotta, Playfair, 20px, 24px top margin */}
+              {analysis.closing && !analysis.safetyFlagged && (
+                <p
+                  className="font-display text-[20px] leading-[1.35] text-primary"
+                  style={{ marginTop: "24px" }}
+                >
                   {analysis.closing}
                 </p>
               )}
 
-              <div className="mt-8 h-px w-full bg-border" />
-
-              <p className="mt-4 text-[11px] leading-[1.6] text-muted-foreground">
-                {analysis.standardClose}
-              </p>
+              {/* Standard close — only when not a safety response (the safety
+                  message already carries its own resources inline). */}
+              {!analysis.safetyFlagged && analysis.standardClose && (
+                <>
+                  <div className="mt-8 h-px w-full" style={{ backgroundColor: "#2A2522" }} />
+                  <p
+                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {analysis.standardClose}
+                  </p>
+                </>
+              )}
             </article>
           )}
 
