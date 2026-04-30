@@ -126,8 +126,7 @@ function Index() {
       sentenceLength: sentence.trim().length,
     });
 
-    let analysisText = "";
-    let safetyFlagged = false;
+    let result: Analysis = makeFailureAnalysis();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
@@ -138,11 +137,32 @@ function Index() {
         signal: controller.signal,
       });
       const data = (await resp.json()) as {
-        analysis?: string;
+        analysis?: Partial<Analysis> | null;
         safetyFlagged?: boolean;
       };
-      analysisText = (data.analysis ?? "").trim() || FAILURE_TEXT;
-      safetyFlagged = data.safetyFlagged === true;
+      const safetyFlagged = data.safetyFlagged === true;
+      const a = data.analysis;
+      if (a && typeof a === "object" && typeof a.wearing === "string" && a.wearing.trim().length > 0) {
+        result = {
+          wearing: a.wearing.trim(),
+          did: typeof a.did === "string" ? a.did.trim() : "",
+          tactic:
+            typeof a.tactic === "string" && a.tactic.trim().length > 0
+              ? a.tactic.trim()
+              : null,
+          closing:
+            typeof a.closing === "string" && a.closing.trim().length > 0
+              ? a.closing.trim()
+              : "",
+          resources:
+            Array.isArray(a.resources) && a.resources.length > 0
+              ? (a.resources as Resource[])
+              : FALLBACK_RESOURCES,
+          safetyFlagged,
+        };
+      } else {
+        result = { ...makeFailureAnalysis(), safetyFlagged };
+      }
       track("iho_submission_received", { sessionId, safetyFlagged });
       if (safetyFlagged) track("iho_safety_flagged", { sessionId });
     } catch (err) {
@@ -154,12 +174,12 @@ function Index() {
         setState("empty");
         return;
       }
-      analysisText = FAILURE_TEXT;
+      result = makeFailureAnalysis();
     } finally {
       clearTimeout(timeoutId);
     }
 
-    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
+    setAnalysis(result);
     setState("output");
   }
 
