@@ -475,9 +475,9 @@ function Index() {
                 </>
               )}
 
-              {/* Quiet exit — text links, 48px below standard close */}
+              {/* Quiet exit — centered text link */}
               <div
-                className="flex items-center gap-6"
+                className="flex items-center justify-center"
                 style={{ marginTop: "48px" }}
               >
                 <button
@@ -487,14 +487,6 @@ function Index() {
                   style={{ fontFamily: "var(--font-sans)" }}
                 >
                   Run another one
-                </button>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground hover:underline"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                >
-                  {copied ? "Link copied" : "Share"}
                 </button>
               </div>
             </article>
