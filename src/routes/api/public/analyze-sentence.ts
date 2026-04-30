@@ -339,8 +339,6 @@ async function callAnthropic(
       return null;
     }
     return coercePayload(parsed);
-
-    return coercePayload(toolBlock.input);
   } catch (err) {
     console.error("[analyze-sentence] anthropic threw", err);
     return null;
