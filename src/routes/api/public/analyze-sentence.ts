@@ -219,57 +219,15 @@ async function logSubmission(input: {
   }
 }
 
-interface AnthropicToolUseBlock {
-  type: "tool_use";
-  id: string;
-  name: string;
-  input: unknown;
-}
 interface AnthropicTextBlock {
   type: "text";
   text: string;
 }
-type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock | { type: string };
+type AnthropicContentBlock = AnthropicTextBlock | { type: string };
 
 interface AnthropicResponse {
   content?: AnthropicContentBlock[];
 }
-
-const ANALYSIS_TOOL = {
-  name: "return_analysis",
-  description:
-    "Return the four-lens analysis of the sentence the user submitted. Always call this tool — never reply with prose.",
-  input_schema: {
-    type: "object",
-    properties: {
-      wearing: { type: "string", description: "What the sentence was wearing and what it did. 1-3 sentences." },
-      did: { type: "string", description: "What happened to authority and whether she was free. 1-3 sentences." },
-      tactic: {
-        type: ["string", "null"],
-        description:
-          "If a specific tactic is recognizable, name it in plain language and say what it does. 1-3 sentences. Null if no specific tactic applies.",
-      },
-      closing: {
-        type: "string",
-        description: "One sentence. A question that hands interpretive authority back to her.",
-      },
-      resources: {
-        type: "array",
-        minItems: 1,
-        maxItems: 2,
-        items: {
-          type: "object",
-          properties: {
-            label: { type: "string" },
-            url: { type: "string" },
-          },
-          required: ["label", "url"],
-        },
-      },
-    },
-    required: ["wearing", "did", "tactic", "closing", "resources"],
-  },
-} as const;
 
 function coerceResources(raw: unknown): AnalysisResource[] {
   if (!Array.isArray(raw)) return FAILURE_PAYLOAD.resources;
@@ -293,8 +251,7 @@ function coercePayload(raw: unknown): AnalysisPayload | null {
   const r = raw as Record<string, unknown>;
   const wearing = typeof r.wearing === "string" ? r.wearing.trim() : "";
   const did = typeof r.did === "string" ? r.did.trim() : "";
-  const closing = typeof r.closing === "string" ? r.closing.trim() : "";
-  if (!wearing || !did || !closing) return null;
+  if (!wearing || !did) return null;
   const tacticRaw = r.tactic;
   const tactic =
     typeof tacticRaw === "string" && tacticRaw.trim().length > 0
@@ -304,9 +261,29 @@ function coercePayload(raw: unknown): AnalysisPayload | null {
     wearing,
     did,
     tactic,
-    closing,
     resources: coerceResources(r.resources),
   };
+}
+
+function extractJsonObject(text: string): unknown | null {
+  const trimmed = text.trim();
+  // Strip optional code fences
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = fenced ? fenced[1] : trimmed;
+  // Try direct parse first
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    // Fall through to brace scan
+  }
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    return JSON.parse(candidate.slice(start, end + 1));
+  } catch {
+    return null;
+  }
 }
 
 async function callAnthropic(
@@ -336,8 +313,6 @@ async function callAnthropic(
         max_tokens: 1000,
         temperature: 0.4,
         system: SYSTEM_PROMPT,
-        tools: [ANALYSIS_TOOL],
-        tool_choice: { type: "tool", name: ANALYSIS_TOOL.name },
         messages: [{ role: "user", content: userMessage }],
       }),
     });
@@ -349,15 +324,22 @@ async function callAnthropic(
     }
 
     const json = (await resp.json()) as AnthropicResponse;
-    const toolBlock = (json.content ?? []).find(
-      (b): b is AnthropicToolUseBlock =>
-        (b as { type?: string }).type === "tool_use" &&
-        (b as AnthropicToolUseBlock).name === ANALYSIS_TOOL.name,
+    const textBlock = (json.content ?? []).find(
+      (b): b is AnthropicTextBlock =>
+        (b as { type?: string }).type === "text" &&
+        typeof (b as AnthropicTextBlock).text === "string",
     );
-    if (!toolBlock) {
-      console.error("[analyze-sentence] no tool_use block in response");
+    if (!textBlock) {
+      console.error("[analyze-sentence] no text block in response");
       return null;
     }
+    const parsed = extractJsonObject(textBlock.text);
+    if (!parsed) {
+      console.error("[analyze-sentence] failed to parse JSON from response", textBlock.text.slice(0, 200));
+      return null;
+    }
+    return coercePayload(parsed);
+
     return coercePayload(toolBlock.input);
   } catch (err) {
     console.error("[analyze-sentence] anthropic threw", err);
