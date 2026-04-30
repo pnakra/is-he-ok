@@ -394,6 +394,7 @@ function Index() {
               </div>
             )}
           </div>
+          )}
 
           {/* Loading line */}
           {state === "loading" && (
