@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { getSessionId } from "@/lib/session";
+import { logSubmission } from "@/lib/submissionLogger";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -62,8 +64,18 @@ function Index() {
     setState("loading");
     // Simulate latency; replace with real Anthropic call later.
     await new Promise((r) => setTimeout(r, 4500));
-    setAnalysis(buildPlaceholderAnalysis(said));
+    const result = buildPlaceholderAnalysis(said);
+    setAnalysis(result);
     setState("output");
+
+    // Fire-and-forget anonymous logging. Never awaited; never surfaces errors.
+    void logSubmission({
+      sessionId: getSessionId(),
+      sentence: said,
+      context: context.trim() ? context : null,
+      analysis: `${result.body}\n\n${result.closing}`,
+      safetyFlagged: false,
+    });
   }
 
   function handleReset() {
