@@ -293,10 +293,9 @@ function Index() {
               maxLength={SAID_MAX}
               aria-label="Type what he said"
               placeholder="Type or paste what he said..."
-              rows={3}
+              rows={4}
               className={
-                "quiet-input block w-full px-0 py-3 text-[17px] text-foreground " +
-                (state === "output" ? "min-h-[72px]" : "min-h-[120px]")
+                "quiet-input block w-full px-0 py-3 text-[17px] text-foreground min-h-[120px]"
               }
               style={{
                 fontFamily: "var(--font-sans)",
