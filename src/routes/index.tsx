@@ -27,6 +27,14 @@ const SAID_MAX = 500;
 const SAID_COUNTER_AT = 400;
 const REQUEST_TIMEOUT_MS = 15000;
 
+const SUGGESTION_CHIPS: string[] = [
+  "something he said felt off",
+  "he said it as a joke but it wasn't",
+  "he said this over text",
+  "something he does keeps happening",
+  "i can't stop thinking about what he said",
+];
+
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
 
@@ -259,24 +267,40 @@ function Index() {
               : "flex flex-1 flex-col py-12"
           }
         >
-          {/* Prompt */}
-          {state === "empty" && (
-            <header className="mb-12 text-center">
-              <h1 className="font-display text-[38px] leading-[1.1] text-foreground sm:text-[46px]">
-                Something he said is sitting with you.
-              </h1>
-            </header>
-          )}
-
           {/* Input area — feels like writing on a dark page, not a form */}
           <div
             className={
               "transition-opacity duration-500 " +
               (inputDimmed ? "opacity-50" : "opacity-100") +
-              (state === "output" ? " mb-8" : " mt-12")
+              (state === "output" ? " mb-8" : "")
             }
             aria-hidden={state === "loading"}
           >
+            {state === "empty" && (
+              <div className="mb-6 flex flex-wrap gap-2">
+                {SUGGESTION_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setSaid(chip);
+                      taRef.current?.focus();
+                    }}
+                    className="text-[13px] text-muted-foreground transition-colors hover:text-foreground hover:border-muted-foreground"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      border: "1px solid #3A3532",
+                      borderRadius: "100px",
+                      padding: "6px 14px",
+                      background: "transparent",
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <label htmlFor="said" className="sr-only">
               What he said
             </label>
@@ -292,7 +316,7 @@ function Index() {
               disabled={state === "loading"}
               maxLength={SAID_MAX}
               aria-label="Type what he said"
-              placeholder="Type or paste what he said..."
+              placeholder="Type or paste what he said, or pick one above to start..."
               rows={4}
               className={
                 "quiet-input block w-full px-0 py-3 text-[17px] text-foreground min-h-[120px]"
