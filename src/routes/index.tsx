@@ -9,11 +9,18 @@ export const Route = createFileRoute("/")({
 
 type AppState = "empty" | "loading" | "output";
 
+interface Resource {
+  label: string;
+  url: string;
+}
+
 interface Analysis {
-  body: string;            // paragraphs leading up to the closing question
-  closing: string;         // the closing question, set apart visually
-  standardClose: string;   // hotline line shown below the divider
-  safetyFlagged: boolean;  // true => safety pre-filter response, no closing q.
+  wearing: string;
+  did: string;
+  tactic: string | null;
+  closing: string;
+  resources: Resource[];
+  safetyFlagged: boolean;
 }
 
 const FAILURE_TEXT =
@@ -35,71 +42,108 @@ const SUGGESTION_CHIPS: string[] = [
   "i can't stop thinking about what he said",
 ];
 
-const SAFETY_LINE =
-  "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
-
-const STANDARD_CLOSE_FALLBACK =
-  "If anything you're experiencing ever feels physically unsafe, the National Domestic Violence Hotline is available 24/7 — 1-800-799-7233 or thehotline.org.";
-
 const LOADING_PHRASES = [
   "Reading it...",
   "Looking at what it did...",
   "Almost...",
 ];
 
-// Detect the standard close (hotline line) and split it off the body.
-function splitStandardClose(text: string): { rest: string; standardClose: string } {
-  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  if (paragraphs.length === 0) {
-    return { rest: text.trim(), standardClose: STANDARD_CLOSE_FALLBACK };
-  }
-  const last = paragraphs[paragraphs.length - 1];
-  if (/1-?800-?799-?7233|thehotline\.org/i.test(last)) {
-    return {
-      rest: paragraphs.slice(0, -1).join("\n\n"),
-      standardClose: last.replace(/^"|"$/g, ""),
-    };
-  }
-  return { rest: paragraphs.join("\n\n"), standardClose: STANDARD_CLOSE_FALLBACK };
+const FALLBACK_RESOURCES: Resource[] = [
+  { label: "National Domestic Violence Hotline", url: "https://www.thehotline.org" },
+];
+
+function makeFailureAnalysis(): Analysis {
+  return {
+    wearing: FAILURE_TEXT,
+    did: "",
+    tactic: null,
+    closing: "Want to try sending it again?",
+    resources: FALLBACK_RESOURCES,
+    safetyFlagged: false,
+  };
 }
 
-// Find the last sentence ending in "?" inside `text`, peel it off the body.
-function splitClosingQuestion(text: string): { body: string; closing: string } {
-  const trimmed = text.trim();
-  if (!trimmed) return { body: "", closing: "" };
+function Card({
+  label,
+  children,
+  defaultOpen = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [maxHeight, setMaxHeight] = useState<string>(defaultOpen ? "none" : "0px");
 
-  const lastQ = trimmed.lastIndexOf("?");
-  if (lastQ === -1) return { body: trimmed, closing: "" };
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    if (open) {
+      const h = el.scrollHeight;
+      setMaxHeight(h + "px");
+      // After the transition, allow natural growth (e.g. window resize).
+      const id = window.setTimeout(() => setMaxHeight("none"), 220);
+      return () => window.clearTimeout(id);
+    } else {
+      // From "none" → fixed px → 0 to animate properly.
+      const h = el.scrollHeight;
+      setMaxHeight(h + "px");
+      requestAnimationFrame(() => setMaxHeight("0px"));
+    }
+  }, [open]);
 
-  const tail = trimmed.slice(lastQ + 1).trim();
-  if (tail.length > 0) return { body: trimmed, closing: "" };
-
-  // Walk forward to find the start of the sentence containing the last "?".
-  let start = 0;
-  const boundary = /[.!?]\s+(?=[A-Z"'(])|\n{2,}/g;
-  let m: RegExpExecArray | null;
-  while ((m = boundary.exec(trimmed)) !== null) {
-    if (m.index >= lastQ) break;
-    start = m.index + m[0].length;
-  }
-
-  const closing = trimmed.slice(start, lastQ + 1).trim();
-  const body = trimmed.slice(0, start).trim();
-
-  if (!body || closing.length > 280) {
-    return { body: trimmed, closing: "" };
-  }
-  return { body, closing };
-}
-
-function parseAnalysis(text: string, safetyFlagged: boolean): Analysis {
-  if (safetyFlagged) {
-    // Safety response is one block; it already contains the hotline resources.
-    return { body: text.trim(), closing: "", standardClose: "", safetyFlagged: true };
-  }
-  const { rest, standardClose } = splitStandardClose(text);
-  const { body, closing } = splitClosingQuestion(rest);
-  return { body, closing, standardClose, safetyFlagged: false };
+  return (
+    <div
+      style={{
+        border: "1px solid #2A2522",
+        borderRadius: "4px",
+        background: "#1A1714",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        style={{ background: "transparent", border: 0, cursor: "pointer" }}
+      >
+        <span
+          className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+          style={{ fontFamily: "var(--font-sans)" }}
+        >
+          {label}
+        </span>
+        <span
+          className="text-[18px] leading-none text-primary"
+          aria-hidden="true"
+          style={{ fontFamily: "var(--font-sans)" }}
+        >
+          {open ? "−" : "+"}
+        </span>
+      </button>
+      <div
+        style={{
+          maxHeight,
+          overflow: "hidden",
+          transition: "max-height 200ms ease",
+        }}
+      >
+        <div
+          ref={contentRef}
+          className="text-[16px] text-foreground"
+          style={{
+            fontFamily: "var(--font-sans)",
+            lineHeight: 1.8,
+            padding: "16px",
+            paddingTop: "0px",
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Index() {
@@ -165,8 +209,7 @@ function Index() {
       sentenceLength: sentence.trim().length,
     });
 
-    let analysisText = "";
-    let safetyFlagged = false;
+    let result: Analysis = makeFailureAnalysis();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
@@ -177,11 +220,32 @@ function Index() {
         signal: controller.signal,
       });
       const data = (await resp.json()) as {
-        analysis?: string;
+        analysis?: Partial<Analysis> | null;
         safetyFlagged?: boolean;
       };
-      analysisText = (data.analysis ?? "").trim() || FAILURE_TEXT;
-      safetyFlagged = data.safetyFlagged === true;
+      const safetyFlagged = data.safetyFlagged === true;
+      const a = data.analysis;
+      if (a && typeof a === "object" && typeof a.wearing === "string" && a.wearing.trim().length > 0) {
+        result = {
+          wearing: a.wearing.trim(),
+          did: typeof a.did === "string" ? a.did.trim() : "",
+          tactic:
+            typeof a.tactic === "string" && a.tactic.trim().length > 0
+              ? a.tactic.trim()
+              : null,
+          closing:
+            typeof a.closing === "string" && a.closing.trim().length > 0
+              ? a.closing.trim()
+              : "",
+          resources:
+            Array.isArray(a.resources) && a.resources.length > 0
+              ? (a.resources as Resource[])
+              : FALLBACK_RESOURCES,
+          safetyFlagged,
+        };
+      } else {
+        result = { ...makeFailureAnalysis(), safetyFlagged };
+      }
       track("iho_submission_received", { sessionId, safetyFlagged });
       if (safetyFlagged) track("iho_safety_flagged", { sessionId });
     } catch (err) {
@@ -193,12 +257,12 @@ function Index() {
         setState("empty");
         return;
       }
-      analysisText = FAILURE_TEXT;
+      result = makeFailureAnalysis();
     } finally {
       clearTimeout(timeoutId);
     }
 
-    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
+    setAnalysis(result);
     setState("output");
   }
 
@@ -420,54 +484,80 @@ function Index() {
                   {submittedSentence}
                 </blockquote>
               )}
-              {analysis.body
-                .split(/\n{2,}/)
-                .filter((p) => p.trim().length > 0)
-                .map((para, i) => (
-                  <p
-                    key={i}
-                    className="text-[17px] text-foreground"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      lineHeight: 1.9,
-                      marginBottom: "28px",
-                    }}
-                  >
-                    {para}
-                  </p>
-                ))}
+              {/* Cards */}
+              <div className="flex flex-col gap-3">
+                <Card label="WHAT IT WAS WEARING" defaultOpen>
+                  {analysis.wearing}
+                </Card>
+                {analysis.did && (
+                  <Card label="WHAT IT DID">{analysis.did}</Card>
+                )}
+                {analysis.tactic && (
+                  <Card label="WHAT THIS IS">{analysis.tactic}</Card>
+                )}
+              </div>
 
-              {/* Closing question — Playfair, 20px, terracotta, alone on its lines */}
-              {analysis.closing && !analysis.safetyFlagged && (
+              {/* Closing question */}
+              {analysis.closing && (
                 <p
                   className="font-display text-[20px] leading-[1.4] text-primary [overflow-wrap:break-word] [hyphens:auto]"
-                  style={{ marginTop: "40px" }}
+                  style={{ marginTop: "32px" }}
                   aria-live="polite"
                 >
                   {analysis.closing}
                 </p>
               )}
 
-              {/* Standard close — hairline divider, secondary text */}
-              {!analysis.safetyFlagged && analysis.standardClose && (
-                <>
-                  <div
-                    className="h-px w-full"
-                    style={{ backgroundColor: "#2A2522", marginTop: "40px" }}
-                  />
-                  <p
-                    className="text-[13px] leading-[1.6] text-muted-foreground"
-                    style={{ fontFamily: "var(--font-sans)", marginTop: "16px" }}
+              {/* Resources */}
+              {analysis.resources.length > 0 && (
+                <section style={{ marginTop: "40px" }}>
+                  <h2
+                    className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+                    style={{ fontFamily: "var(--font-sans)" }}
                   >
-                    {analysis.standardClose}
-                  </p>
-                </>
+                    If You Want to Go Deeper
+                  </h2>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {analysis.resources.map((r) => (
+                      <a
+                        key={r.url}
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-[13px] text-primary no-underline transition-opacity hover:opacity-80"
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          border: "1px solid #C4784A",
+                          borderRadius: "100px",
+                          padding: "6px 14px",
+                          background: "transparent",
+                        }}
+                      >
+                        <span>{r.label}</span>
+                        <span aria-hidden="true">→</span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
               )}
 
-              {/* Quiet exit — centered text link */}
+              {/* Safety line + divider */}
+              <div style={{ marginTop: "48px" }}>
+                <div className="h-px w-full" style={{ backgroundColor: "#2A2522" }} />
+                <div className="pt-6 text-center">
+                  <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                    No account. Nothing saved about you.
+                  </p>
+                  <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                    If you're in immediate danger, call 911 or 1-800-799-7233.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quiet exit — centered text link, 32px below safety line */}
               <div
                 className="flex items-center justify-center"
-                style={{ marginTop: "48px" }}
+                style={{ marginTop: "32px" }}
               >
                 <button
                   type="button"

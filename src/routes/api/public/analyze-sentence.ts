@@ -29,11 +29,46 @@ const SAFETY_KEYWORDS = [
   "hurt me",
 ];
 
-const SAFETY_RESPONSE =
-  "What you're describing sounds like you may be in danger right now. Please call 911 or the National Domestic Violence Hotline at 1-800-799-7233. You can also text START to 88788. They're available 24/7 and they understand exactly this kind of situation.";
+const SAFETY_RESPONSE: AnalysisPayload = {
+  wearing:
+    "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
+  did: "Please reach out to someone who can help you tonight.",
+  tactic: null,
+  closing: "Is there someone you trust you can text right now?",
+  resources: [
+    {
+      label: "National Domestic Violence Hotline — 1-800-799-7233",
+      url: "https://www.thehotline.org",
+    },
+  ],
+};
 
-const FAILURE_RESPONSE =
-  "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+const FAILURE_PAYLOAD: AnalysisPayload = {
+  wearing:
+    "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
+  did: "",
+  tactic: null,
+  closing: "Want to try sending it again?",
+  resources: [
+    {
+      label: "National Domestic Violence Hotline",
+      url: "https://www.thehotline.org",
+    },
+  ],
+};
+
+interface AnalysisResource {
+  label: string;
+  url: string;
+}
+
+interface AnalysisPayload {
+  wearing: string;
+  did: string;
+  tactic: string | null;
+  closing: string;
+  resources: AnalysisResource[];
+}
 
 const SYSTEM_PROMPT = `You are the analysis engine for Is He OK? — a tool built for girls and women who have a sentence, a text, a remark, a comment sitting in their chest that they can't stop thinking about. They've come here because something felt wrong and they don't know if they can trust that feeling.
 
@@ -92,22 +127,21 @@ Match whoever is writing. If she writes casually — short sentences, lowercase,
 
 FORMAT
 
-No headers. No bullet points. No bold text. Exactly three paragraphs, each 2-3 sentences maximum. Total response under 150 words before the closing question.
+You return your analysis by calling the \`return_analysis\` tool. Do not write prose outside the tool call. The tool fields:
 
-Paragraph 1: What the sentence was wearing and what it did. One thing. Specific.
+- wearing (string, required): What the sentence was wearing and what it did. 1-3 sentences. Specific. Plain language. No headers, no bullets, no bold.
+- did (string, required): What happened to authority and whether she was free. 1-3 sentences. Specific.
+- tactic (string or null): If you recognize a specific tactic, name it in plain language and say what it does. 1-3 sentences. If you do not recognize a specific tactic, return null. Do not stretch.
+- closing (string, required): One sentence. A question that hands interpretive authority back to her, connected to what you found. No quotation marks.
+- resources (array of {label, url}, 1-2 items): Real, public-facing resources she could read next if she wants to go deeper. Pick from this approved list only:
+  • { label: "Why Does He Do That? — Lundy Bancroft", url: "https://lundybancroft.com/why-does-he-do-that/" }
+  • { label: "Coercive Control — Evan Stark", url: "https://global.oup.com/academic/product/coercive-control-9780195384024" }
+  • { label: "Power and Control Wheel", url: "https://www.theduluthmodel.org/wheels/" }
+  • { label: "National Domestic Violence Hotline", url: "https://www.thehotline.org" }
+  • { label: "One Love Foundation — 10 Signs", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship/" }
+  Pick the 1-2 most relevant to what you found. If nothing else fits, default to "National Domestic Violence Hotline".
 
-Paragraph 2: What happened to authority and whether she was free. One thing. Specific.
-
-Paragraph 3: If you're recognizing a specific tactic, name it in plain language. If not, skip this paragraph entirely — go straight to the closing question.
-
-Then the closing question. One sentence. Set it apart with a line break before and after.
-
-Then the standard close. One line.
-
-Be ruthlessly brief. She came here with something sitting in her chest. She needs a clear read, not an essay. If you're explaining more than three things, you're explaining too many things.
-
-STANDARD CLOSE — always, every response, after the closing question:
-"If anything you're experiencing ever feels physically unsafe, the National Domestic Violence Hotline is available 24/7 — 1-800-799-7233 or thehotline.org."
+Be ruthlessly brief. She came here with something sitting in her chest. She needs a clear read, not an essay.
 
 WHAT YOU ARE NOT DOING
 
@@ -165,15 +199,100 @@ async function logSubmission(input: {
   }
 }
 
-interface AnthropicContentBlock {
-  type: string;
-  text?: string;
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: unknown;
 }
+interface AnthropicTextBlock {
+  type: "text";
+  text: string;
+}
+type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock | { type: string };
+
 interface AnthropicResponse {
   content?: AnthropicContentBlock[];
 }
 
-async function callAnthropic(sentence: string, context: string | null): Promise<string | null> {
+const ANALYSIS_TOOL = {
+  name: "return_analysis",
+  description:
+    "Return the four-lens analysis of the sentence the user submitted. Always call this tool — never reply with prose.",
+  input_schema: {
+    type: "object",
+    properties: {
+      wearing: { type: "string", description: "What the sentence was wearing and what it did. 1-3 sentences." },
+      did: { type: "string", description: "What happened to authority and whether she was free. 1-3 sentences." },
+      tactic: {
+        type: ["string", "null"],
+        description:
+          "If a specific tactic is recognizable, name it in plain language and say what it does. 1-3 sentences. Null if no specific tactic applies.",
+      },
+      closing: {
+        type: "string",
+        description: "One sentence. A question that hands interpretive authority back to her.",
+      },
+      resources: {
+        type: "array",
+        minItems: 1,
+        maxItems: 2,
+        items: {
+          type: "object",
+          properties: {
+            label: { type: "string" },
+            url: { type: "string" },
+          },
+          required: ["label", "url"],
+        },
+      },
+    },
+    required: ["wearing", "did", "tactic", "closing", "resources"],
+  },
+} as const;
+
+function coerceResources(raw: unknown): AnalysisResource[] {
+  if (!Array.isArray(raw)) return FAILURE_PAYLOAD.resources;
+  const out: AnalysisResource[] = [];
+  for (const item of raw) {
+    if (item && typeof item === "object") {
+      const r = item as Record<string, unknown>;
+      const label = typeof r.label === "string" ? r.label.trim() : "";
+      const url = typeof r.url === "string" ? r.url.trim() : "";
+      if (label && url && /^https?:\/\//i.test(url)) {
+        out.push({ label, url });
+      }
+    }
+    if (out.length >= 2) break;
+  }
+  return out.length > 0 ? out : FAILURE_PAYLOAD.resources;
+}
+
+function coercePayload(raw: unknown): AnalysisPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const wearing = typeof r.wearing === "string" ? r.wearing.trim() : "";
+  const did = typeof r.did === "string" ? r.did.trim() : "";
+  const closing = typeof r.closing === "string" ? r.closing.trim() : "";
+  if (!wearing || !did || !closing) return null;
+  const tacticRaw = r.tactic;
+  const tactic =
+    typeof tacticRaw === "string" && tacticRaw.trim().length > 0
+      ? tacticRaw.trim()
+      : null;
+  return {
+    wearing,
+    did,
+    tactic,
+    closing,
+    resources: coerceResources(r.resources),
+  };
+}
+
+async function callAnthropic(
+  sentence: string,
+  context: string | null,
+): Promise<AnalysisPayload | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error("[analyze-sentence] missing ANTHROPIC_API_KEY");
@@ -194,9 +313,11 @@ async function callAnthropic(sentence: string, context: string | null): Promise<
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 800,
+        max_tokens: 1000,
         temperature: 0.4,
         system: SYSTEM_PROMPT,
+        tools: [ANALYSIS_TOOL],
+        tool_choice: { type: "tool", name: ANALYSIS_TOOL.name },
         messages: [{ role: "user", content: userMessage }],
       }),
     });
@@ -208,13 +329,16 @@ async function callAnthropic(sentence: string, context: string | null): Promise<
     }
 
     const json = (await resp.json()) as AnthropicResponse;
-    const text = (json.content ?? [])
-      .filter((b) => b.type === "text" && typeof b.text === "string")
-      .map((b) => b.text!)
-      .join("\n")
-      .trim();
-
-    return text || null;
+    const toolBlock = (json.content ?? []).find(
+      (b): b is AnthropicToolUseBlock =>
+        (b as { type?: string }).type === "tool_use" &&
+        (b as AnthropicToolUseBlock).name === ANALYSIS_TOOL.name,
+    );
+    if (!toolBlock) {
+      console.error("[analyze-sentence] no tool_use block in response");
+      return null;
+    }
+    return coercePayload(toolBlock.input);
   } catch (err) {
     console.error("[analyze-sentence] anthropic threw", err);
     return null;
@@ -228,6 +352,20 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+interface AnalyzeApiResponse {
+  analysis: AnalysisPayload;
+  safetyFlagged: boolean;
+}
+
+function buildResponse(
+  analysis: AnalysisPayload,
+  safetyFlagged: boolean,
+  status = 200,
+): Response {
+  const body: AnalyzeApiResponse = { analysis, safetyFlagged };
+  return jsonResponse(body, status);
+}
+
 export const Route = createFileRoute("/api/public/analyze-sentence")({
   server: {
     handlers: {
@@ -239,12 +377,12 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         try {
           raw = (await request.json()) as AnalyzeBody;
         } catch {
-          return jsonResponse({ analysis: FAILURE_RESPONSE, safetyFlagged: false }, 200);
+          return buildResponse(FAILURE_PAYLOAD, false);
         }
 
         const input = normalize(raw);
         if (!input) {
-          return jsonResponse({ analysis: FAILURE_RESPONSE, safetyFlagged: false }, 200);
+          return buildResponse(FAILURE_PAYLOAD, false);
         }
 
         // STEP 1 — safety pre-filter
@@ -253,16 +391,16 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             sessionId: input.sessionId,
             sentence: input.sentence,
             context: input.context,
-            analysis: SAFETY_RESPONSE,
+            analysis: JSON.stringify(SAFETY_RESPONSE),
             safetyFlagged: true,
           });
-          return jsonResponse({ analysis: SAFETY_RESPONSE, safetyFlagged: true });
+          return buildResponse(SAFETY_RESPONSE, true);
         }
 
         // STEP 2 — Anthropic
         const analysis = await callAnthropic(input.sentence, input.context);
         if (!analysis) {
-          return jsonResponse({ analysis: FAILURE_RESPONSE, safetyFlagged: false });
+          return buildResponse(FAILURE_PAYLOAD, false);
         }
 
         // STEP 3 — log + return
@@ -270,11 +408,11 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           sessionId: input.sessionId,
           sentence: input.sentence,
           context: input.context,
-          analysis,
+          analysis: JSON.stringify(analysis),
           safetyFlagged: false,
         });
 
-        return jsonResponse({ analysis, safetyFlagged: false });
+        return buildResponse(analysis, false);
       },
     },
   },
