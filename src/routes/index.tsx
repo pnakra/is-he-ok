@@ -289,15 +289,32 @@ function Index() {
               id="said"
               ref={taRef}
               value={said}
-              onChange={(e) => setSaid(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value.slice(0, SAID_MAX);
+                setSaid(v);
+                if (timedOut) setTimedOut(false);
+              }}
               disabled={state === "loading"}
+              maxLength={SAID_MAX}
+              aria-label="Type what he said"
               placeholder="Type or paste what he said..."
               className={
-                "w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-5 text-[17px] leading-[1.6] text-foreground outline-none focus:ring-0 " +
+                "w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-5 text-[16px] sm:text-[17px] leading-[1.6] text-foreground outline-none focus:ring-0 " +
                 (state === "output" ? "min-h-[96px]" : "min-h-[160px]")
               }
               style={{ fontFamily: "var(--font-sans)" }}
             />
+            {said.length >= SAID_COUNTER_AT && (
+              <p
+                className="mt-1 text-right text-[11px] text-muted-foreground"
+                aria-live="polite"
+                style={{ fontFamily: "var(--font-sans)" }}
+              >
+                {said.length >= SAID_MAX
+                  ? "That's enough to work with."
+                  : `${SAID_MAX - said.length} characters left`}
+              </p>
+            )}
 
             <div className="mt-3">
               <label htmlFor="context" className="sr-only">
@@ -306,13 +323,26 @@ function Index() {
               <textarea
                 id="context"
                 value={context}
-                onChange={(e) => setContext(e.target.value)}
+                onChange={(e) => setContext(e.target.value.slice(0, CTX_MAX))}
                 disabled={state === "loading"}
+                maxLength={CTX_MAX}
+                aria-label="Optional context"
                 placeholder="Anything that helps — where you were, what had just happened. Optional."
                 rows={2}
-                className="w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-4 text-[14px] leading-[1.6] text-muted-foreground outline-none focus:text-foreground focus:ring-0"
+                className="w-full resize-none border-0 bg-[var(--color-surface)] px-6 py-4 text-[16px] sm:text-[14px] leading-[1.6] text-muted-foreground outline-none focus:text-foreground focus:ring-0"
                 style={{ fontFamily: "var(--font-sans)" }}
               />
+              {context.length >= CTX_COUNTER_AT && (
+                <p
+                  className="mt-1 text-right text-[11px] text-muted-foreground"
+                  aria-live="polite"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  {context.length >= CTX_MAX
+                    ? "That's enough to work with."
+                    : `${CTX_MAX - context.length} characters left`}
+                </p>
+              )}
             </div>
 
             {state !== "output" && (
@@ -321,7 +351,7 @@ function Index() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="mt-3 block w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-3 block min-h-[52px] w-full bg-primary px-6 py-4 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
                   style={{ fontFamily: "var(--font-sans)" }}
                 >
                   What did this do?
@@ -334,6 +364,32 @@ function Index() {
                     style={{ fontFamily: "var(--font-sans)" }}
                   >
                     {EMPTY_HINT}
+                  </p>
+                )}
+                {!showEmptyHint && showShortHint && (
+                  <p
+                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    aria-live="polite"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {SHORT_HINT}
+                  </p>
+                )}
+                {timedOut && (
+                  <p
+                    className="mt-3 text-[13px] leading-[1.6] text-muted-foreground"
+                    role="status"
+                    aria-live="polite"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {TIMEOUT_HINT}{" "}
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      Try again
+                    </button>
                   </p>
                 )}
               </>
