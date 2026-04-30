@@ -99,7 +99,6 @@ function parseAnalysis(text: string, safetyFlagged: boolean): Analysis {
 function Index() {
   const [state, setState] = useState<AppState>("empty");
   const [said, setSaid] = useState("");
-  const [context, setContext] = useState("");
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [copied, setCopied] = useState(false);
