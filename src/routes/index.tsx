@@ -146,16 +146,14 @@ function Index() {
 
   const isLoading = state === "loading";
 
-  async function runSubmit(sentence: string, ctxRaw: string) {
+  async function runSubmit(sentence: string) {
     setShowEmptyHint(false);
     setTimedOut(false);
     setState("loading");
 
     const sessionId = getSessionId();
-    const ctx = ctxRaw.trim() ? ctxRaw : undefined;
     track("iho_submission_started", {
       sessionId,
-      hasContext: Boolean(ctx),
       sentenceLength: sentence.trim().length,
     });
 
@@ -167,7 +165,7 @@ function Index() {
       const resp = await fetch("/api/public/analyze-sentence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sentence, context: ctx, sessionId }),
+        body: JSON.stringify({ sentence, sessionId }),
         signal: controller.signal,
       });
       const data = (await resp.json()) as {
