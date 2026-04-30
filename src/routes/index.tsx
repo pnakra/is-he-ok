@@ -9,11 +9,18 @@ export const Route = createFileRoute("/")({
 
 type AppState = "empty" | "loading" | "output";
 
+interface Resource {
+  label: string;
+  url: string;
+}
+
 interface Analysis {
-  body: string;            // paragraphs leading up to the closing question
-  closing: string;         // the closing question, set apart visually
-  standardClose: string;   // hotline line shown below the divider
-  safetyFlagged: boolean;  // true => safety pre-filter response, no closing q.
+  wearing: string;
+  did: string;
+  tactic: string | null;
+  closing: string;
+  resources: Resource[];
+  safetyFlagged: boolean;
 }
 
 const FAILURE_TEXT =
@@ -35,71 +42,25 @@ const SUGGESTION_CHIPS: string[] = [
   "i can't stop thinking about what he said",
 ];
 
-const SAFETY_LINE =
-  "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
-
-const STANDARD_CLOSE_FALLBACK =
-  "If anything you're experiencing ever feels physically unsafe, the National Domestic Violence Hotline is available 24/7 — 1-800-799-7233 or thehotline.org.";
-
 const LOADING_PHRASES = [
   "Reading it...",
   "Looking at what it did...",
   "Almost...",
 ];
 
-// Detect the standard close (hotline line) and split it off the body.
-function splitStandardClose(text: string): { rest: string; standardClose: string } {
-  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  if (paragraphs.length === 0) {
-    return { rest: text.trim(), standardClose: STANDARD_CLOSE_FALLBACK };
-  }
-  const last = paragraphs[paragraphs.length - 1];
-  if (/1-?800-?799-?7233|thehotline\.org/i.test(last)) {
-    return {
-      rest: paragraphs.slice(0, -1).join("\n\n"),
-      standardClose: last.replace(/^"|"$/g, ""),
-    };
-  }
-  return { rest: paragraphs.join("\n\n"), standardClose: STANDARD_CLOSE_FALLBACK };
-}
+const FALLBACK_RESOURCES: Resource[] = [
+  { label: "National Domestic Violence Hotline", url: "https://www.thehotline.org" },
+];
 
-// Find the last sentence ending in "?" inside `text`, peel it off the body.
-function splitClosingQuestion(text: string): { body: string; closing: string } {
-  const trimmed = text.trim();
-  if (!trimmed) return { body: "", closing: "" };
-
-  const lastQ = trimmed.lastIndexOf("?");
-  if (lastQ === -1) return { body: trimmed, closing: "" };
-
-  const tail = trimmed.slice(lastQ + 1).trim();
-  if (tail.length > 0) return { body: trimmed, closing: "" };
-
-  // Walk forward to find the start of the sentence containing the last "?".
-  let start = 0;
-  const boundary = /[.!?]\s+(?=[A-Z"'(])|\n{2,}/g;
-  let m: RegExpExecArray | null;
-  while ((m = boundary.exec(trimmed)) !== null) {
-    if (m.index >= lastQ) break;
-    start = m.index + m[0].length;
-  }
-
-  const closing = trimmed.slice(start, lastQ + 1).trim();
-  const body = trimmed.slice(0, start).trim();
-
-  if (!body || closing.length > 280) {
-    return { body: trimmed, closing: "" };
-  }
-  return { body, closing };
-}
-
-function parseAnalysis(text: string, safetyFlagged: boolean): Analysis {
-  if (safetyFlagged) {
-    // Safety response is one block; it already contains the hotline resources.
-    return { body: text.trim(), closing: "", standardClose: "", safetyFlagged: true };
-  }
-  const { rest, standardClose } = splitStandardClose(text);
-  const { body, closing } = splitClosingQuestion(rest);
-  return { body, closing, standardClose, safetyFlagged: false };
+function makeFailureAnalysis(): Analysis {
+  return {
+    wearing: FAILURE_TEXT,
+    did: "",
+    tactic: null,
+    closing: "Want to try sending it again?",
+    resources: FALLBACK_RESOURCES,
+    safetyFlagged: false,
+  };
 }
 
 function Index() {
