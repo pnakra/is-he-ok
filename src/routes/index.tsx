@@ -18,7 +18,7 @@ interface Analysis {
   wearing: string;
   did: string;
   tactic: string | null;
-  closing: string;
+  closing?: string;
   resources: Resource[];
   safetyFlagged: boolean;
 }
@@ -55,9 +55,8 @@ const FALLBACK_RESOURCES: Resource[] = [
 function makeFailureAnalysis(): Analysis {
   return {
     wearing: FAILURE_TEXT,
-    did: "",
+    did: "Want to try sending it again?",
     tactic: null,
-    closing: "Want to try sending it again?",
     resources: FALLBACK_RESOURCES,
     safetyFlagged: false,
   };

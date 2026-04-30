@@ -32,13 +32,16 @@ const SAFETY_KEYWORDS = [
 const SAFETY_RESPONSE: AnalysisPayload = {
   wearing:
     "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
-  did: "Please reach out to someone who can help you tonight.",
+  did: "Please reach out to someone who can help you tonight. Is there someone you trust you can text right now?",
   tactic: null,
-  closing: "Is there someone you trust you can text right now?",
   resources: [
     {
-      label: "National Domestic Violence Hotline — 1-800-799-7233",
+      label: "The hotline — chat available",
       url: "https://www.thehotline.org",
+    },
+    {
+      label: "r/abusiverelationships",
+      url: "https://reddit.com/r/abusiverelationships",
     },
   ],
 };
@@ -46,12 +49,15 @@ const SAFETY_RESPONSE: AnalysisPayload = {
 const FAILURE_PAYLOAD: AnalysisPayload = {
   wearing:
     "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
-  did: "",
+  did: "Want to try sending it again?",
   tactic: null,
-  closing: "Want to try sending it again?",
   resources: [
     {
-      label: "National Domestic Violence Hotline",
+      label: "r/relationships",
+      url: "https://reddit.com/r/relationships",
+    },
+    {
+      label: "The hotline — chat available",
       url: "https://www.thehotline.org",
     },
   ],
@@ -66,7 +72,6 @@ interface AnalysisPayload {
   wearing: string;
   did: string;
   tactic: string | null;
-  closing: string;
   resources: AnalysisResource[];
 }
 
@@ -127,19 +132,34 @@ Match whoever is writing. If she writes casually — short sentences, lowercase,
 
 FORMAT
 
-You return your analysis by calling the \`return_analysis\` tool. Do not write prose outside the tool call. The tool fields:
+Return only a valid JSON object. No prose before or after it. No markdown. No backticks. The fields are:
 
-- wearing (string, required): What the sentence was wearing and what it did. 1-3 sentences. Specific. Plain language. No headers, no bullets, no bold.
-- did (string, required): What happened to authority and whether she was free. 1-3 sentences. Specific.
-- tactic (string or null): If you recognize a specific tactic, name it in plain language and say what it does. 1-3 sentences. If you do not recognize a specific tactic, return null. Do not stretch.
-- closing (string, required): One sentence. A question that hands interpretive authority back to her, connected to what you found. No quotation marks.
-- resources (array of {label, url}, 1-2 items): Real, public-facing resources she could read next if she wants to go deeper. Pick from this approved list only:
-  • { label: "Why Does He Do That? — Lundy Bancroft", url: "https://lundybancroft.com/why-does-he-do-that/" }
-  • { label: "Coercive Control — Evan Stark", url: "https://global.oup.com/academic/product/coercive-control-9780195384024" }
-  • { label: "Power and Control Wheel", url: "https://www.theduluthmodel.org/wheels/" }
-  • { label: "National Domestic Violence Hotline", url: "https://www.thehotline.org" }
-  • { label: "One Love Foundation — 10 Signs", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship/" }
-  Pick the 1-2 most relevant to what you found. If nothing else fits, default to "National Domestic Violence Hotline".
+"wearing" — what the sentence was disguised as and what that disguise did. 2-3 sentences.
+"did" — what the sentence actually produced: the authority shift, whether she was free. 2-3 sentences.
+"tactic" — if you recognize a specific named tactic (manufactured insecurity, withdrawal as punishment, embedded criticism, alternating warmth and coldness, frame control, testing how much she'll accept), name it in plain language in 1-2 sentences. If none clearly applies, return null.
+"resources" — exactly 2 resources relevant to what you found in this analysis. Choose from this list based on what the analysis identified:
+
+If CARE disguise or manufactured insecurity or withdrawal as punishment:
+{"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
+{"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
+
+If LOGIC disguise or frame control:
+{"label": "Why Does He Do That? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
+{"label": "r/NarcissisticAbuse", "url": "https://reddit.com/r/NarcissisticAbuse"}
+
+If MORALITY disguise or debt mechanism:
+{"label": "The hotline — chat available", "url": "https://www.thehotline.org"}
+{"label": "Lundy Bancroft on entitlement", "url": "https://www.youtube.com/watch?v=T3FeVVPMEMk"}
+
+If EMPATHY disguise or alternating warmth and coldness:
+{"label": "r/limerence", "url": "https://reddit.com/r/limerence"}
+{"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
+
+If clean result:
+{"label": "r/relationships", "url": "https://reddit.com/r/relationships"}
+{"label": "The hotline — chat available", "url": "https://www.thehotline.org"}
+
+Always return exactly 2 resources. Never return more.
 
 Be ruthlessly brief. She came here with something sitting in her chest. She needs a clear read, not an essay.
 
@@ -199,57 +219,15 @@ async function logSubmission(input: {
   }
 }
 
-interface AnthropicToolUseBlock {
-  type: "tool_use";
-  id: string;
-  name: string;
-  input: unknown;
-}
 interface AnthropicTextBlock {
   type: "text";
   text: string;
 }
-type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock | { type: string };
+type AnthropicContentBlock = AnthropicTextBlock | { type: string };
 
 interface AnthropicResponse {
   content?: AnthropicContentBlock[];
 }
-
-const ANALYSIS_TOOL = {
-  name: "return_analysis",
-  description:
-    "Return the four-lens analysis of the sentence the user submitted. Always call this tool — never reply with prose.",
-  input_schema: {
-    type: "object",
-    properties: {
-      wearing: { type: "string", description: "What the sentence was wearing and what it did. 1-3 sentences." },
-      did: { type: "string", description: "What happened to authority and whether she was free. 1-3 sentences." },
-      tactic: {
-        type: ["string", "null"],
-        description:
-          "If a specific tactic is recognizable, name it in plain language and say what it does. 1-3 sentences. Null if no specific tactic applies.",
-      },
-      closing: {
-        type: "string",
-        description: "One sentence. A question that hands interpretive authority back to her.",
-      },
-      resources: {
-        type: "array",
-        minItems: 1,
-        maxItems: 2,
-        items: {
-          type: "object",
-          properties: {
-            label: { type: "string" },
-            url: { type: "string" },
-          },
-          required: ["label", "url"],
-        },
-      },
-    },
-    required: ["wearing", "did", "tactic", "closing", "resources"],
-  },
-} as const;
 
 function coerceResources(raw: unknown): AnalysisResource[] {
   if (!Array.isArray(raw)) return FAILURE_PAYLOAD.resources;
@@ -273,8 +251,7 @@ function coercePayload(raw: unknown): AnalysisPayload | null {
   const r = raw as Record<string, unknown>;
   const wearing = typeof r.wearing === "string" ? r.wearing.trim() : "";
   const did = typeof r.did === "string" ? r.did.trim() : "";
-  const closing = typeof r.closing === "string" ? r.closing.trim() : "";
-  if (!wearing || !did || !closing) return null;
+  if (!wearing || !did) return null;
   const tacticRaw = r.tactic;
   const tactic =
     typeof tacticRaw === "string" && tacticRaw.trim().length > 0
@@ -284,9 +261,29 @@ function coercePayload(raw: unknown): AnalysisPayload | null {
     wearing,
     did,
     tactic,
-    closing,
     resources: coerceResources(r.resources),
   };
+}
+
+function extractJsonObject(text: string): unknown | null {
+  const trimmed = text.trim();
+  // Strip optional code fences
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = fenced ? fenced[1] : trimmed;
+  // Try direct parse first
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    // Fall through to brace scan
+  }
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    return JSON.parse(candidate.slice(start, end + 1));
+  } catch {
+    return null;
+  }
 }
 
 async function callAnthropic(
@@ -316,8 +313,6 @@ async function callAnthropic(
         max_tokens: 1000,
         temperature: 0.4,
         system: SYSTEM_PROMPT,
-        tools: [ANALYSIS_TOOL],
-        tool_choice: { type: "tool", name: ANALYSIS_TOOL.name },
         messages: [{ role: "user", content: userMessage }],
       }),
     });
@@ -329,16 +324,21 @@ async function callAnthropic(
     }
 
     const json = (await resp.json()) as AnthropicResponse;
-    const toolBlock = (json.content ?? []).find(
-      (b): b is AnthropicToolUseBlock =>
-        (b as { type?: string }).type === "tool_use" &&
-        (b as AnthropicToolUseBlock).name === ANALYSIS_TOOL.name,
+    const textBlock = (json.content ?? []).find(
+      (b): b is AnthropicTextBlock =>
+        (b as { type?: string }).type === "text" &&
+        typeof (b as AnthropicTextBlock).text === "string",
     );
-    if (!toolBlock) {
-      console.error("[analyze-sentence] no tool_use block in response");
+    if (!textBlock) {
+      console.error("[analyze-sentence] no text block in response");
       return null;
     }
-    return coercePayload(toolBlock.input);
+    const parsed = extractJsonObject(textBlock.text);
+    if (!parsed) {
+      console.error("[analyze-sentence] failed to parse JSON from response", textBlock.text.slice(0, 200));
+      return null;
+    }
+    return coercePayload(parsed);
   } catch (err) {
     console.error("[analyze-sentence] anthropic threw", err);
     return null;
