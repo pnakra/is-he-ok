@@ -411,7 +411,12 @@ function Index() {
 
           {/* Output */}
           {state === "output" && analysis && (
-            <article className="animate-rise-in border border-border bg-[var(--color-surface)] p-8 sm:p-10">
+            <article
+              ref={outputRef}
+              role="region"
+              aria-label="Analysis"
+              className="animate-rise-in border border-border bg-[var(--color-surface)] p-8 sm:p-10"
+            >
               {analysis.body
                 .split(/\n{2,}/)
                 .filter((p) => p.trim().length > 0)
