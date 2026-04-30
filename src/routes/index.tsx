@@ -318,7 +318,7 @@ function Index() {
             )}
 
             {state !== "output" && (
-              <div className="mt-8">
+              <div className="mt-6 text-center">
                 <button
                   type="button"
                   onClick={handleSubmit}
