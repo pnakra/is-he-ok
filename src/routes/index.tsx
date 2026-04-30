@@ -35,11 +35,11 @@ const SAID_COUNTER_AT = 400;
 const REQUEST_TIMEOUT_MS = 15000;
 
 const SUGGESTION_CHIPS: string[] = [
-  "something he said felt off",
-  "he said it as a joke but it wasn't",
-  "he said this over text",
-  "something he does keeps happening",
-  "i can't stop thinking about what he said",
+  "he said he was just worried about me",
+  "he said it as a joke but it wasn't funny",
+  "he brought up everything he's done for me",
+  "he said i always do this",
+  "he went quiet after i did something he didn't like",
 ];
 
 const LOADING_PHRASES = [
