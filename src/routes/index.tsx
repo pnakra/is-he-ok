@@ -39,7 +39,7 @@ const SUGGESTION_CHIPS: string[] = [
   "he said it as a joke but it wasn't funny",
   "he brought up everything he's done for me",
   "he said i always do this",
-  "he went quiet after i did something he didn't like",
+  
 ];
 
 const LOADING_PHRASES = [
