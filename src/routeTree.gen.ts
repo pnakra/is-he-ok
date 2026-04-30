@@ -10,33 +10,44 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicAnalyzeSentenceRouteImport } from './routes/api/public/analyze-sentence'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAnalyzeSentenceRoute =
+  ApiPublicAnalyzeSentenceRouteImport.update({
+    id: '/api/public/analyze-sentence',
+    path: '/api/public/analyze-sentence',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/public/analyze-sentence'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/analyze-sentence'
+  id: '__root__' | '/' | '/api/public/analyze-sentence'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicAnalyzeSentenceRoute: typeof ApiPublicAnalyzeSentenceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +59,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/analyze-sentence': {
+      id: '/api/public/analyze-sentence'
+      path: '/api/public/analyze-sentence'
+      fullPath: '/api/public/analyze-sentence'
+      preLoaderRoute: typeof ApiPublicAnalyzeSentenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicAnalyzeSentenceRoute: ApiPublicAnalyzeSentenceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
