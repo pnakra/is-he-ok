@@ -201,19 +201,18 @@ function Index() {
       taRef.current?.focus();
       return;
     }
-    await runSubmit(said, context);
+    await runSubmit(said);
   }
 
   function handleRetry() {
     if (isLoading) return;
-    void runSubmit(said, context);
+    void runSubmit(said);
   }
 
   function handleReset() {
     track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
     setSaid("");
-    setContext("");
     setShowEmptyHint(false);
     setShowShortHint(false);
     setTimedOut(false);
