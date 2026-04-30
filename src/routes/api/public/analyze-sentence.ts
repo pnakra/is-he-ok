@@ -199,15 +199,100 @@ async function logSubmission(input: {
   }
 }
 
-interface AnthropicContentBlock {
-  type: string;
-  text?: string;
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: unknown;
 }
+interface AnthropicTextBlock {
+  type: "text";
+  text: string;
+}
+type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock | { type: string };
+
 interface AnthropicResponse {
   content?: AnthropicContentBlock[];
 }
 
-async function callAnthropic(sentence: string, context: string | null): Promise<string | null> {
+const ANALYSIS_TOOL = {
+  name: "return_analysis",
+  description:
+    "Return the four-lens analysis of the sentence the user submitted. Always call this tool — never reply with prose.",
+  input_schema: {
+    type: "object",
+    properties: {
+      wearing: { type: "string", description: "What the sentence was wearing and what it did. 1-3 sentences." },
+      did: { type: "string", description: "What happened to authority and whether she was free. 1-3 sentences." },
+      tactic: {
+        type: ["string", "null"],
+        description:
+          "If a specific tactic is recognizable, name it in plain language and say what it does. 1-3 sentences. Null if no specific tactic applies.",
+      },
+      closing: {
+        type: "string",
+        description: "One sentence. A question that hands interpretive authority back to her.",
+      },
+      resources: {
+        type: "array",
+        minItems: 1,
+        maxItems: 2,
+        items: {
+          type: "object",
+          properties: {
+            label: { type: "string" },
+            url: { type: "string" },
+          },
+          required: ["label", "url"],
+        },
+      },
+    },
+    required: ["wearing", "did", "tactic", "closing", "resources"],
+  },
+} as const;
+
+function coerceResources(raw: unknown): AnalysisResource[] {
+  if (!Array.isArray(raw)) return FAILURE_PAYLOAD.resources;
+  const out: AnalysisResource[] = [];
+  for (const item of raw) {
+    if (item && typeof item === "object") {
+      const r = item as Record<string, unknown>;
+      const label = typeof r.label === "string" ? r.label.trim() : "";
+      const url = typeof r.url === "string" ? r.url.trim() : "";
+      if (label && url && /^https?:\/\//i.test(url)) {
+        out.push({ label, url });
+      }
+    }
+    if (out.length >= 2) break;
+  }
+  return out.length > 0 ? out : FAILURE_PAYLOAD.resources;
+}
+
+function coercePayload(raw: unknown): AnalysisPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const wearing = typeof r.wearing === "string" ? r.wearing.trim() : "";
+  const did = typeof r.did === "string" ? r.did.trim() : "";
+  const closing = typeof r.closing === "string" ? r.closing.trim() : "";
+  if (!wearing || !did || !closing) return null;
+  const tacticRaw = r.tactic;
+  const tactic =
+    typeof tacticRaw === "string" && tacticRaw.trim().length > 0
+      ? tacticRaw.trim()
+      : null;
+  return {
+    wearing,
+    did,
+    tactic,
+    closing,
+    resources: coerceResources(r.resources),
+  };
+}
+
+async function callAnthropic(
+  sentence: string,
+  context: string | null,
+): Promise<AnalysisPayload | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error("[analyze-sentence] missing ANTHROPIC_API_KEY");
@@ -228,9 +313,11 @@ async function callAnthropic(sentence: string, context: string | null): Promise<
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 800,
+        max_tokens: 1000,
         temperature: 0.4,
         system: SYSTEM_PROMPT,
+        tools: [ANALYSIS_TOOL],
+        tool_choice: { type: "tool", name: ANALYSIS_TOOL.name },
         messages: [{ role: "user", content: userMessage }],
       }),
     });
@@ -242,13 +329,16 @@ async function callAnthropic(sentence: string, context: string | null): Promise<
     }
 
     const json = (await resp.json()) as AnthropicResponse;
-    const text = (json.content ?? [])
-      .filter((b) => b.type === "text" && typeof b.text === "string")
-      .map((b) => b.text!)
-      .join("\n")
-      .trim();
-
-    return text || null;
+    const toolBlock = (json.content ?? []).find(
+      (b): b is AnthropicToolUseBlock =>
+        (b as { type?: string }).type === "tool_use" &&
+        (b as AnthropicToolUseBlock).name === ANALYSIS_TOOL.name,
+    );
+    if (!toolBlock) {
+      console.error("[analyze-sentence] no tool_use block in response");
+      return null;
+    }
+    return coercePayload(toolBlock.input);
   } catch (err) {
     console.error("[analyze-sentence] anthropic threw", err);
     return null;
@@ -262,6 +352,20 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+interface AnalyzeApiResponse {
+  analysis: AnalysisPayload;
+  safetyFlagged: boolean;
+}
+
+function buildResponse(
+  analysis: AnalysisPayload,
+  safetyFlagged: boolean,
+  status = 200,
+): Response {
+  const body: AnalyzeApiResponse = { analysis, safetyFlagged };
+  return jsonResponse(body, status);
+}
+
 export const Route = createFileRoute("/api/public/analyze-sentence")({
   server: {
     handlers: {
@@ -273,12 +377,12 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         try {
           raw = (await request.json()) as AnalyzeBody;
         } catch {
-          return jsonResponse({ analysis: FAILURE_RESPONSE, safetyFlagged: false }, 200);
+          return buildResponse(FAILURE_PAYLOAD, false);
         }
 
         const input = normalize(raw);
         if (!input) {
-          return jsonResponse({ analysis: FAILURE_RESPONSE, safetyFlagged: false }, 200);
+          return buildResponse(FAILURE_PAYLOAD, false);
         }
 
         // STEP 1 — safety pre-filter
@@ -287,16 +391,16 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             sessionId: input.sessionId,
             sentence: input.sentence,
             context: input.context,
-            analysis: SAFETY_RESPONSE,
+            analysis: JSON.stringify(SAFETY_RESPONSE),
             safetyFlagged: true,
           });
-          return jsonResponse({ analysis: SAFETY_RESPONSE, safetyFlagged: true });
+          return buildResponse(SAFETY_RESPONSE, true);
         }
 
         // STEP 2 — Anthropic
         const analysis = await callAnthropic(input.sentence, input.context);
         if (!analysis) {
-          return jsonResponse({ analysis: FAILURE_RESPONSE, safetyFlagged: false });
+          return buildResponse(FAILURE_PAYLOAD, false);
         }
 
         // STEP 3 — log + return
@@ -304,11 +408,11 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           sessionId: input.sessionId,
           sentence: input.sentence,
           context: input.context,
-          analysis,
+          analysis: JSON.stringify(analysis),
           safetyFlagged: false,
         });
 
-        return jsonResponse({ analysis, safetyFlagged: false });
+        return buildResponse(analysis, false);
       },
     },
   },
