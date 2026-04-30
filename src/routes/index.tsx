@@ -20,6 +20,14 @@ const FAILURE_TEXT =
   "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
 
 const EMPTY_HINT = "Type something he said — even just a few words.";
+const SHORT_HINT = "A little more context helps — what did he say exactly?";
+const TIMEOUT_HINT = "That's taking longer than it should. Try again?";
+
+const SAID_MAX = 500;
+const SAID_COUNTER_AT = 400;
+const CTX_MAX = 300;
+const CTX_COUNTER_AT = 250;
+const REQUEST_TIMEOUT_MS = 15000;
 
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
