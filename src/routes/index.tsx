@@ -231,17 +231,6 @@ function Index() {
     }
   }
 
-  async function handleShare() {
-    try {
-      const url = typeof window !== "undefined" ? window.location.origin + "/" : "";
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      track("iho_share_clicked", { sessionId: getSessionId() });
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* no-op */
-    }
-  }
 
   const inputDimmed = state === "loading";
 
