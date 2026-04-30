@@ -104,7 +104,10 @@ function Index() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [copied, setCopied] = useState(false);
   const [showEmptyHint, setShowEmptyHint] = useState(false);
+  const [showShortHint, setShowShortHint] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const outputRef = useRef<HTMLElement | null>(null);
 
   // Auto-grow primary textarea
   useEffect(() => {
