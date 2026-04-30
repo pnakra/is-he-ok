@@ -132,7 +132,70 @@ function Index() {
     if (showEmptyHint && said.trim().length > 0) setShowEmptyHint(false);
   }, [said, showEmptyHint]);
 
+  // Show short hint when sentence is non-empty but very short.
+  useEffect(() => {
+    const len = said.trim().length;
+    setShowShortHint(len > 0 && len < 10);
+  }, [said]);
+
+  // Scroll output card into view on mobile when it appears.
+  useEffect(() => {
+    if (state === "output" && outputRef.current) {
+      outputRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [state]);
+
   const isLoading = state === "loading";
+
+  async function runSubmit(sentence: string, ctxRaw: string) {
+    setShowEmptyHint(false);
+    setTimedOut(false);
+    setState("loading");
+
+    const sessionId = getSessionId();
+    const ctx = ctxRaw.trim() ? ctxRaw : undefined;
+    track("iho_submission_started", {
+      sessionId,
+      hasContext: Boolean(ctx),
+      sentenceLength: sentence.trim().length,
+    });
+
+    let analysisText = "";
+    let safetyFlagged = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const resp = await fetch("/api/public/analyze-sentence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence, context: ctx, sessionId }),
+        signal: controller.signal,
+      });
+      const data = (await resp.json()) as {
+        analysis?: string;
+        safetyFlagged?: boolean;
+      };
+      analysisText = (data.analysis ?? "").trim() || FAILURE_TEXT;
+      safetyFlagged = data.safetyFlagged === true;
+      track("iho_submission_received", { sessionId, safetyFlagged });
+      if (safetyFlagged) track("iho_safety_flagged", { sessionId });
+    } catch (err) {
+      const isAbort = (err as { name?: string })?.name === "AbortError";
+      track("iho_submission_failed", { sessionId, timeout: isAbort });
+      if (isAbort) {
+        clearTimeout(timeoutId);
+        setTimedOut(true);
+        setState("empty");
+        return;
+      }
+      analysisText = FAILURE_TEXT;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
+    setState("output");
+  }
 
   async function handleSubmit() {
     if (isLoading) return;
@@ -141,40 +204,12 @@ function Index() {
       taRef.current?.focus();
       return;
     }
-    setShowEmptyHint(false);
-    setState("loading");
+    await runSubmit(said, context);
+  }
 
-    const sessionId = getSessionId();
-    const ctx = context.trim() ? context : undefined;
-    track("iho_submission_started", {
-      sessionId,
-      hasContext: Boolean(ctx),
-      sentenceLength: said.trim().length,
-    });
-
-    let analysisText = "";
-    let safetyFlagged = false;
-    try {
-      const resp = await fetch("/api/public/analyze-sentence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sentence: said, context: ctx, sessionId }),
-      });
-      const data = (await resp.json()) as {
-        analysis?: string;
-        safetyFlagged?: boolean;
-      };
-      analysisText = data.analysis ?? FAILURE_TEXT;
-      safetyFlagged = data.safetyFlagged === true;
-      track("iho_submission_received", { sessionId, safetyFlagged });
-      if (safetyFlagged) track("iho_safety_flagged", { sessionId });
-    } catch {
-      analysisText = FAILURE_TEXT;
-      track("iho_submission_failed", { sessionId });
-    }
-
-    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
-    setState("output");
+  function handleRetry() {
+    if (isLoading) return;
+    void runSubmit(said, context);
   }
 
   function handleReset() {
