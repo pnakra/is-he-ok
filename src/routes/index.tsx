@@ -265,9 +265,6 @@ function Index() {
               <h1 className="font-display text-[38px] leading-[1.1] text-foreground sm:text-[46px]">
                 Something he said is sitting with you.
               </h1>
-              <p className="mt-5 font-display text-[18px] italic text-muted-foreground">
-                Type it here.
-              </p>
             </header>
           )}
 
