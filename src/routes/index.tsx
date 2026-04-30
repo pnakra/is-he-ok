@@ -417,6 +417,20 @@ function Index() {
               aria-label="Analysis"
               className="animate-rise-in mx-auto w-full max-w-[520px]"
             >
+              {submittedSentence && (
+                <blockquote
+                  className="font-display italic text-primary"
+                  style={{
+                    fontSize: "16px",
+                    lineHeight: 1.6,
+                    borderLeft: "2px solid #C4784A",
+                    paddingLeft: "16px",
+                    marginBottom: "32px",
+                  }}
+                >
+                  {submittedSentence}
+                </blockquote>
+              )}
               {analysis.body
                 .split(/\n{2,}/)
                 .filter((p) => p.trim().length > 0)
