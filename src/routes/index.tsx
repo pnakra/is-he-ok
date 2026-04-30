@@ -27,6 +27,14 @@ const SAID_MAX = 500;
 const SAID_COUNTER_AT = 400;
 const REQUEST_TIMEOUT_MS = 15000;
 
+const SUGGESTION_CHIPS: string[] = [
+  "something he said felt off",
+  "he said it as a joke but it wasn't",
+  "he said this over text",
+  "something he does keeps happening",
+  "i can't stop thinking about what he said",
+];
+
 const SAFETY_LINE =
   "No account. Nothing saved about you. If you're in immediate danger, call 911 or 1-800-799-7233.";
 
