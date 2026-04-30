@@ -271,11 +271,11 @@ function Index() {
           }
         >
           {/* Input area — feels like writing on a dark page, not a form */}
+          {state !== "output" && (
           <div
             className={
               "transition-opacity duration-500 " +
-              (inputDimmed ? "opacity-50" : "opacity-100") +
-              (state === "output" ? " mb-8" : "")
+              (inputDimmed ? "opacity-50" : "opacity-100")
             }
             aria-hidden={state === "loading"}
           >
