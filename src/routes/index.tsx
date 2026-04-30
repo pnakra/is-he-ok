@@ -95,6 +95,7 @@ function Index() {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showEmptyHint, setShowEmptyHint] = useState(false);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Auto-grow primary textarea
@@ -115,39 +116,66 @@ function Index() {
     return () => clearInterval(id);
   }, [state]);
 
-  const canSubmit = said.trim().length > 0 && state !== "loading";
+  // Hide the empty-state hint as soon as she starts typing.
+  useEffect(() => {
+    if (showEmptyHint && said.trim().length > 0) setShowEmptyHint(false);
+  }, [said, showEmptyHint]);
+
+  const isLoading = state === "loading";
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+    if (isLoading) return;
+    if (said.trim().length === 0) {
+      setShowEmptyHint(true);
+      taRef.current?.focus();
+      return;
+    }
+    setShowEmptyHint(false);
     setState("loading");
 
+    const sessionId = getSessionId();
+    const ctx = context.trim() ? context : undefined;
+    track("iho_submission_started", {
+      sessionId,
+      hasContext: Boolean(ctx),
+      sentenceLength: said.trim().length,
+    });
+
     let analysisText = "";
+    let safetyFlagged = false;
     try {
       const resp = await fetch("/api/public/analyze-sentence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sentence: said,
-          context: context.trim() ? context : undefined,
-          sessionId: getSessionId(),
-        }),
+        body: JSON.stringify({ sentence: said, context: ctx, sessionId }),
       });
-      const data = (await resp.json()) as { analysis?: string };
-      analysisText =
-        data.analysis ??
-        "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+      const data = (await resp.json()) as {
+        analysis?: string;
+        safetyFlagged?: boolean;
+      };
+      analysisText = data.analysis ?? FAILURE_TEXT;
+      safetyFlagged = data.safetyFlagged === true;
+      track("iho_submission_received", { sessionId, safetyFlagged });
+      if (safetyFlagged) track("iho_safety_flagged", { sessionId });
     } catch {
-      analysisText =
-        "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+      analysisText = FAILURE_TEXT;
+      track("iho_submission_failed", { sessionId });
     }
 
-    setAnalysis(parseAnalysis(analysisText));
+    setAnalysis(parseAnalysis(analysisText, safetyFlagged));
     setState("output");
   }
 
   function handleReset() {
+    track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
+    setSaid("");
+    setContext("");
+    setShowEmptyHint(false);
     setState("empty");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   async function handleShare() {
@@ -155,6 +183,7 @@ function Index() {
       const url = typeof window !== "undefined" ? window.location.origin + "/" : "";
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      track("iho_share_clicked", { sessionId: getSessionId() });
       setTimeout(() => setCopied(false), 1800);
     } catch {
       /* no-op */
