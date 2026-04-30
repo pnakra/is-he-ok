@@ -484,9 +484,12 @@ function Index() {
 
         {/* Footer safety line — only on empty/loading states */}
         {state !== "output" && (
-          <footer className="pt-12">
+          <footer className="pt-12 text-center">
             <p className="text-[11px] leading-[1.6] text-muted-foreground">
-              {SAFETY_LINE}
+              No account. Nothing saved about you.
+            </p>
+            <p className="text-[11px] leading-[1.6] text-muted-foreground">
+              If you're in immediate danger, call 911 or 1-800-799-7233.
             </p>
           </footer>
         )}
