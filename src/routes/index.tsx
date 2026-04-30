@@ -156,6 +156,7 @@ function Index() {
   async function runSubmit(sentence: string) {
     setShowEmptyHint(false);
     setTimedOut(false);
+    setSubmittedSentence(sentence.trim());
     setState("loading");
 
     const sessionId = getSessionId();
