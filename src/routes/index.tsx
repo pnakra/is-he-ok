@@ -460,25 +460,6 @@ function Index() {
               </div>
             </article>
           )}
-
-          {state === "output" && (
-            <div className="mt-6 flex items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-[14px] text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Run another one
-              </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="text-[14px] text-primary transition-colors hover:opacity-80"
-              >
-                {copied ? "Link copied" : "Share"}
-              </button>
-            </div>
-          )}
         </section>
 
         {/* Footer safety line — only on empty/loading states */}
