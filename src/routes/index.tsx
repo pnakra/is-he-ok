@@ -243,21 +243,32 @@ function Index() {
           {/* Output */}
           {state === "output" && analysis && (
             <article className="animate-rise-in border border-border bg-[var(--color-surface)] p-8 sm:p-10">
-              <p
-                className="text-[16px] leading-[1.7] text-foreground"
-                style={{ fontFamily: "var(--font-sans)" }}
-              >
-                {analysis.body}
-              </p>
+              {analysis.body
+                .split(/\n{2,}/)
+                .filter((p) => p.trim().length > 0)
+                .map((para, i) => (
+                  <p
+                    key={i}
+                    className={
+                      "text-[16px] leading-[1.7] text-foreground " +
+                      (i > 0 ? "mt-5" : "")
+                    }
+                    style={{ fontFamily: "var(--font-sans)" }}
+                  >
+                    {para}
+                  </p>
+                ))}
 
-              <p className="mt-8 font-display text-[22px] leading-[1.35] text-primary sm:text-[24px]">
-                {analysis.closing}
-              </p>
+              {analysis.closing && (
+                <p className="mt-8 font-display text-[22px] leading-[1.35] text-primary sm:text-[24px]">
+                  {analysis.closing}
+                </p>
+              )}
 
               <div className="mt-8 h-px w-full bg-border" />
 
               <p className="mt-4 text-[11px] leading-[1.6] text-muted-foreground">
-                {SAFETY_LINE}
+                {analysis.standardClose}
               </p>
             </article>
           )}
