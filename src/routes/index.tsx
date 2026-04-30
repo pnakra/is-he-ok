@@ -247,15 +247,15 @@ function Index() {
       <div className="mx-auto flex min-h-screen w-full max-w-[640px] flex-col px-10 py-10 sm:px-12">
         {/* Brand */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Is He OK?
+          <span className="text-[11px] font-medium normal-case tracking-[0.22em] text-muted-foreground">
+            is he ok?
           </span>
           <Link
             to="/about"
             className="text-[13px] text-muted-foreground no-underline hover:underline"
             style={{ fontFamily: "var(--font-sans)" }}
           >
-            about
+            About
           </Link>
         </div>
 
@@ -484,9 +484,12 @@ function Index() {
 
         {/* Footer safety line — only on empty/loading states */}
         {state !== "output" && (
-          <footer className="pt-12">
+          <footer className="pt-12 text-center">
             <p className="text-[11px] leading-[1.6] text-muted-foreground">
-              {SAFETY_LINE}
+              No account. Nothing saved about you.
+            </p>
+            <p className="text-[11px] leading-[1.6] text-muted-foreground">
+              If you're in immediate danger, call 911 or 1-800-799-7233.
             </p>
           </footer>
         )}
