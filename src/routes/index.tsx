@@ -108,7 +108,7 @@ function Index() {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [submittedSentence, setSubmittedSentence] = useState("");
-  const [copied, setCopied] = useState(false);
+  
   const [showEmptyHint, setShowEmptyHint] = useState(false);
   const [showShortHint, setShowShortHint] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
