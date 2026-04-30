@@ -63,6 +63,89 @@ function makeFailureAnalysis(): Analysis {
   };
 }
 
+function Card({
+  label,
+  children,
+  defaultOpen = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [maxHeight, setMaxHeight] = useState<string>(defaultOpen ? "none" : "0px");
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    if (open) {
+      const h = el.scrollHeight;
+      setMaxHeight(h + "px");
+      // After the transition, allow natural growth (e.g. window resize).
+      const id = window.setTimeout(() => setMaxHeight("none"), 220);
+      return () => window.clearTimeout(id);
+    } else {
+      // From "none" → fixed px → 0 to animate properly.
+      const h = el.scrollHeight;
+      setMaxHeight(h + "px");
+      requestAnimationFrame(() => setMaxHeight("0px"));
+    }
+  }, [open]);
+
+  return (
+    <div
+      style={{
+        border: "1px solid #2A2522",
+        borderRadius: "4px",
+        background: "#1A1714",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        style={{ background: "transparent", border: 0, cursor: "pointer" }}
+      >
+        <span
+          className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+          style={{ fontFamily: "var(--font-sans)" }}
+        >
+          {label}
+        </span>
+        <span
+          className="text-[18px] leading-none text-primary"
+          aria-hidden="true"
+          style={{ fontFamily: "var(--font-sans)" }}
+        >
+          {open ? "−" : "+"}
+        </span>
+      </button>
+      <div
+        style={{
+          maxHeight,
+          overflow: "hidden",
+          transition: "max-height 200ms ease",
+        }}
+      >
+        <div
+          ref={contentRef}
+          className="text-[16px] text-foreground"
+          style={{
+            fontFamily: "var(--font-sans)",
+            lineHeight: 1.8,
+            padding: "16px",
+            paddingTop: "0px",
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Index() {
   const [state, setState] = useState<AppState>("empty");
   const [said, setSaid] = useState("");
