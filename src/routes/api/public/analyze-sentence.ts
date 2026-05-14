@@ -403,8 +403,8 @@ async function logSubmission(input: {
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
   }
-  // Fire-and-forget Slack notification — must never block or break the response.
-  void notifySlack(input);
+  // Awaited so the Cloudflare Worker doesn't cancel the request after responding.
+  await notifySlack(input);
 }
 
 interface AnthropicTextBlock {
