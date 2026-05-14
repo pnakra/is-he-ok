@@ -310,6 +310,11 @@ async function notifySlack(input: {
   ];
 
   try {
+    const channel = await resolveSlackChannelId(SLACK_CHANNEL_NAME, lovableKey, slackKey);
+    if (!channel) {
+      console.error("[analyze-sentence] slack channel not found:", SLACK_CHANNEL_NAME);
+      return;
+    }
     const resp = await fetch("https://connector-gateway.lovable.dev/slack/api/chat.postMessage", {
       method: "POST",
       headers: {
@@ -318,7 +323,7 @@ async function notifySlack(input: {
         "X-Connection-Api-Key": slackKey,
       },
       body: JSON.stringify({
-        channel: "iho_submissions",
+        channel,
         text,
         blocks,
         unfurl_links: false,
@@ -337,6 +342,47 @@ async function notifySlack(input: {
   } catch (err) {
     console.error("[analyze-sentence] slack threw", err);
   }
+}
+
+const SLACK_CHANNEL_NAME = "iho_submissions";
+let cachedChannelId: string | null = null;
+
+async function resolveSlackChannelId(
+  name: string,
+  lovableKey: string,
+  slackKey: string,
+): Promise<string | null> {
+  if (cachedChannelId) return cachedChannelId;
+  const target = name.replace(/^#/, "").toLowerCase();
+  let cursor = "";
+  for (let i = 0; i < 20; i++) {
+    const url = new URL("https://connector-gateway.lovable.dev/slack/api/conversations.list");
+    url.searchParams.set("limit", "200");
+    url.searchParams.set("types", "public_channel,private_channel");
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": slackKey,
+      },
+    });
+    const json = (await resp.json().catch(() => null)) as
+      | { ok?: boolean; error?: string; channels?: Array<{ id: string; name: string }>; response_metadata?: { next_cursor?: string } }
+      | null;
+    if (!json || json.ok === false) {
+      console.error("[analyze-sentence] conversations.list failed", json?.error);
+      return null;
+    }
+    const match = json.channels?.find((c) => c.name?.toLowerCase() === target);
+    if (match) {
+      cachedChannelId = match.id;
+      return match.id;
+    }
+    cursor = json.response_metadata?.next_cursor ?? "";
+    if (!cursor) break;
+  }
+  return null;
 }
 
 async function logSubmission(input: {
