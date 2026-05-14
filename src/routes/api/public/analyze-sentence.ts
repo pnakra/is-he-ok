@@ -254,6 +254,91 @@ function isSafetyFlagged(sentence: string, context: string | null): boolean {
   return SAFETY_KEYWORDS.some((kw) => haystack.includes(kw));
 }
 
+async function notifySlack(input: {
+  sessionId: string;
+  sentence: string;
+  context: string | null;
+  analysis: string;
+  safetyFlagged: boolean;
+}): Promise<void> {
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const slackKey = process.env.SLACK_API_KEY;
+  if (!lovableKey || !slackKey) return;
+
+  let parsedAnalysis: unknown = null;
+  try {
+    parsedAnalysis = JSON.parse(input.analysis);
+  } catch {
+    parsedAnalysis = input.analysis;
+  }
+
+  const text = input.safetyFlagged
+    ? "🚨 New IHO submission (safety flagged)"
+    : "📝 New IHO submission";
+
+  const blocks = [
+    {
+      type: "header",
+      text: { type: "plain_text", text },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Safety flagged:*\n${input.safetyFlagged ? "Yes" : "No"}` },
+        { type: "mrkdwn", text: `*Session:*\n\`${input.sessionId}\`` },
+      ],
+    },
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: `*Sentence:*\n>>> ${input.sentence.slice(0, 2800)}` },
+    },
+    ...(input.context
+      ? [
+          {
+            type: "section",
+            text: { type: "mrkdwn", text: `*Context:*\n>>> ${input.context.slice(0, 2800)}` },
+          },
+        ]
+      : []),
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*Analysis:*\n\`\`\`${JSON.stringify(parsedAnalysis, null, 2).slice(0, 2800)}\`\`\``,
+      },
+    },
+  ];
+
+  try {
+    const resp = await fetch("https://connector-gateway.lovable.dev/slack/api/chat.postMessage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": slackKey,
+      },
+      body: JSON.stringify({
+        channel: "iho_submissions",
+        text,
+        blocks,
+        unfurl_links: false,
+        unfurl_media: false,
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      console.error("[analyze-sentence] slack non-ok", resp.status, body);
+    } else {
+      const json = (await resp.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (json && json.ok === false) {
+        console.error("[analyze-sentence] slack api error", json.error);
+      }
+    }
+  } catch (err) {
+    console.error("[analyze-sentence] slack threw", err);
+  }
+}
+
 async function logSubmission(input: {
   sessionId: string;
   sentence: string;
@@ -272,6 +357,8 @@ async function logSubmission(input: {
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
   }
+  // Fire-and-forget Slack notification — must never block or break the response.
+  void notifySlack(input);
 }
 
 interface AnthropicTextBlock {
