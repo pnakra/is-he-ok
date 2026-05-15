@@ -203,6 +203,32 @@ function Index() {
   const [askedQuestions, setAskedQuestions] = useState<FollowupQuestion[]>([]);
   const [answers, setAnswers] = useState<Partial<Record<FollowupKey, string>>>({});
 
+  const [prolificId, setProlificId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get("prolific_id") ?? params.get("PROLIFIC_PID");
+      if (raw) {
+        const trimmed = raw.trim();
+        if (trimmed.length > 0 && trimmed.length <= 64 && /^[A-Za-z0-9_-]+$/.test(trimmed)) {
+          setProlificId(trimmed);
+          try {
+            window.sessionStorage.setItem("iho_prolific_id", trimmed);
+          } catch {
+            // ignore
+          }
+          return;
+        }
+      }
+      const stored = window.sessionStorage.getItem("iho_prolific_id");
+      if (stored) setProlificId(stored);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const [showEmptyHint, setShowEmptyHint] = useState(false);
   const [showShortHint, setShowShortHint] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
@@ -265,6 +291,7 @@ function Index() {
           sessionId,
           followups,
           triageStatus,
+          prolificId,
         }),
         signal: controller.signal,
       });

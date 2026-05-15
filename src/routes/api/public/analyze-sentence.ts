@@ -232,6 +232,7 @@ interface AnalyzeBody {
   sessionId?: unknown;
   followups?: unknown;
   triageStatus?: unknown;
+  prolificId?: unknown;
 }
 
 interface NormalizedInput {
@@ -240,6 +241,7 @@ interface NormalizedInput {
   sessionId: string;
   followups: FollowupAnswers;
   triageStatus: string | null;
+  prolificId: string | null;
 }
 
 function pickAnswer(v: unknown): string | null {
@@ -273,12 +275,21 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
       ? body.triageStatus.trim().slice(0, 32)
       : null;
 
+  let prolificId: string | null = null;
+  if (typeof body.prolificId === "string") {
+    const t = body.prolificId.trim();
+    if (t.length > 0 && t.length <= 64 && /^[A-Za-z0-9_-]+$/.test(t)) {
+      prolificId = t;
+    }
+  }
+
   return {
     sentence,
     context: ctxRaw ? ctxRaw : null,
     sessionId,
     followups,
     triageStatus,
+    prolificId,
   };
 }
 
@@ -293,6 +304,7 @@ async function notifySlack(input: {
   context: string | null;
   analysis: string;
   safetyFlagged: boolean;
+  prolificId?: string | null;
 }): Promise<void> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const slackKey = process.env.SLACK_API_KEY;
@@ -319,6 +331,9 @@ async function notifySlack(input: {
       fields: [
         { type: "mrkdwn", text: `*Safety flagged:*\n${input.safetyFlagged ? "Yes" : "No"}` },
         { type: "mrkdwn", text: `*Session:*\n\`${input.sessionId}\`` },
+        ...(input.prolificId
+          ? [{ type: "mrkdwn", text: `*Prolific ID:*\n\`${input.prolificId}\`` }]
+          : []),
       ],
     },
     {
@@ -485,6 +500,7 @@ async function logSubmission(input: {
   safetyFlagged: boolean;
   followups?: FollowupAnswers | null;
   triageStatus?: string | null;
+  prolificId?: string | null;
 }): Promise<void> {
   try {
     await supabaseAdmin.from("iho_submissions").insert({
@@ -495,7 +511,8 @@ async function logSubmission(input: {
       safety_flagged: input.safetyFlagged,
       followups: (input.followups ?? null) as never,
       triage_status: input.triageStatus ?? null,
-    });
+      prolific_id: input.prolificId ?? null,
+    } as never);
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
   }
@@ -505,6 +522,7 @@ async function logSubmission(input: {
     context: input.context,
     analysis: input.analysis,
     safetyFlagged: input.safetyFlagged,
+    prolificId: input.prolificId ?? null,
   });
 }
 
@@ -692,6 +710,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             safetyFlagged: true,
             followups: input.followups,
             triageStatus: input.triageStatus ?? "SAFETY",
+            prolificId: input.prolificId,
           });
           return buildResponse(SAFETY_RESPONSE, true);
         }
@@ -711,6 +730,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           safetyFlagged: false,
           followups: input.followups,
           triageStatus: input.triageStatus,
+          prolificId: input.prolificId,
         });
 
         return buildResponse(analysis, false);

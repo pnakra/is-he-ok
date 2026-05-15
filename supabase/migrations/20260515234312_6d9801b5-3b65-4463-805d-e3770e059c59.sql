@@ -1,0 +1,1 @@
+ALTER TABLE public.iho_submissions ADD COLUMN prolific_id text NULL;
