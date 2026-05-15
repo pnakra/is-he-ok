@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           followups: Json | null
           id: string
+          prolific_id: string | null
           safety_flagged: boolean
           sentence: string
           session_id: string
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string
           followups?: Json | null
           id?: string
+          prolific_id?: string | null
           safety_flagged?: boolean
           sentence: string
           session_id: string
@@ -43,6 +45,7 @@ export type Database = {
           created_at?: string
           followups?: Json | null
           id?: string
+          prolific_id?: string | null
           safety_flagged?: boolean
           sentence?: string
           session_id?: string
