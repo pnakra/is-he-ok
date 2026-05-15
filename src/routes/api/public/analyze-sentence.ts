@@ -424,6 +424,8 @@ async function logSubmission(input: {
   context: string | null;
   analysis: string;
   safetyFlagged: boolean;
+  followups?: FollowupAnswers | null;
+  triageStatus?: string | null;
 }): Promise<void> {
   try {
     await supabaseAdmin.from("iho_submissions").insert({
@@ -432,12 +434,19 @@ async function logSubmission(input: {
       context: input.context,
       analysis: input.analysis,
       safety_flagged: input.safetyFlagged,
+      followups: input.followups ?? null,
+      triage_status: input.triageStatus ?? null,
     });
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
   }
-  // Awaited so the Cloudflare Worker doesn't cancel the request after responding.
-  await notifySlack(input);
+  await notifySlack({
+    sessionId: input.sessionId,
+    sentence: input.sentence,
+    context: input.context,
+    analysis: input.analysis,
+    safetyFlagged: input.safetyFlagged,
+  });
 }
 
 interface AnthropicTextBlock {
