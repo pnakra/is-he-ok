@@ -478,10 +478,13 @@ function coercePayload(raw: unknown): AnalysisPayload | null {
     typeof tacticRaw === "string" && tacticRaw.trim().length > 0
       ? tacticRaw.trim()
       : null;
+  const closing =
+    typeof r.closing === "string" && r.closing.trim().length > 0 ? r.closing.trim() : "";
   return {
     wearing,
     did,
     tactic,
+    closing,
     resources: coerceResources(r.resources),
   };
 }
