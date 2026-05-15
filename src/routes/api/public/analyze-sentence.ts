@@ -434,7 +434,7 @@ async function logSubmission(input: {
       context: input.context,
       analysis: input.analysis,
       safety_flagged: input.safetyFlagged,
-      followups: input.followups ?? null,
+      followups: (input.followups ?? null) as never,
       triage_status: input.triageStatus ?? null,
     });
   } catch (err) {
