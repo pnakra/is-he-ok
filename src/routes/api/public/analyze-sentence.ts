@@ -331,6 +331,9 @@ async function notifySlack(input: {
       fields: [
         { type: "mrkdwn", text: `*Safety flagged:*\n${input.safetyFlagged ? "Yes" : "No"}` },
         { type: "mrkdwn", text: `*Session:*\n\`${input.sessionId}\`` },
+        ...(input.prolificId
+          ? [{ type: "mrkdwn", text: `*Prolific ID:*\n\`${input.prolificId}\`` }]
+          : []),
       ],
     },
     {
