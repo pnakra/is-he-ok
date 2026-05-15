@@ -18,7 +18,8 @@ type EventName =
   | "iho_submission_failed"
   | "iho_safety_flagged"
   | "iho_share_clicked"
-  | "iho_reset_clicked";
+  | "iho_reset_clicked"
+  | "iho_triage_result";
 
 type EventProps = Record<string, string | number | boolean>;
 
