@@ -387,9 +387,14 @@ async function resolveSlackChannelId(
 ): Promise<string | null> {
   if (cachedChannelId) return cachedChannelId;
   const target = name.replace(/^#/, "").toLowerCase();
+
+  // Strategy 1: users.conversations — channels the bot is a member of (incl. private).
+  // Works without groups:read; only requires standard channel scopes.
   let cursor = "";
   for (let i = 0; i < 20; i++) {
-    const url = new URL("https://connector-gateway.lovable.dev/slack/api/conversations.list");
+    const url = new URL(
+      "https://connector-gateway.lovable.dev/slack/api/users.conversations",
+    );
     url.searchParams.set("limit", "200");
     url.searchParams.set("types", "public_channel,private_channel");
     if (cursor) url.searchParams.set("cursor", cursor);
@@ -401,10 +406,64 @@ async function resolveSlackChannelId(
       },
     });
     const json = (await resp.json().catch(() => null)) as
-      | { ok?: boolean; error?: string; channels?: Array<{ id: string; name: string }>; response_metadata?: { next_cursor?: string } }
+      | {
+          ok?: boolean;
+          error?: string;
+          channels?: Array<{ id: string; name: string }>;
+          response_metadata?: { next_cursor?: string };
+        }
       | null;
     if (!json || json.ok === false) {
-      console.error("[analyze-sentence] conversations.list failed", json?.error);
+      console.error(
+        "[analyze-sentence] users.conversations failed",
+        json?.error,
+      );
+      break;
+    }
+    console.log(
+      "[analyze-sentence] users.conversations returned",
+      json.channels?.length ?? 0,
+      "channels:",
+      json.channels?.map((c) => c.name).join(", "),
+    );
+    const match = json.channels?.find((c) => c.name?.toLowerCase() === target);
+    if (match) {
+      cachedChannelId = match.id;
+      return match.id;
+    }
+    cursor = json.response_metadata?.next_cursor ?? "";
+    if (!cursor) break;
+  }
+
+  // Strategy 2 (fallback): conversations.list — needs channels:read + groups:read.
+  cursor = "";
+  for (let i = 0; i < 20; i++) {
+    const url = new URL(
+      "https://connector-gateway.lovable.dev/slack/api/conversations.list",
+    );
+    url.searchParams.set("limit", "200");
+    url.searchParams.set("types", "public_channel,private_channel");
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": slackKey,
+      },
+    });
+    const json = (await resp.json().catch(() => null)) as
+      | {
+          ok?: boolean;
+          error?: string;
+          channels?: Array<{ id: string; name: string }>;
+          response_metadata?: { next_cursor?: string };
+        }
+      | null;
+    if (!json || json.ok === false) {
+      console.error(
+        "[analyze-sentence] conversations.list failed",
+        json?.error,
+      );
       return null;
     }
     const match = json.channels?.find((c) => c.name?.toLowerCase() === target);
