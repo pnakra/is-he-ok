@@ -496,6 +496,7 @@ async function logSubmission(input: {
   safetyFlagged: boolean;
   followups?: FollowupAnswers | null;
   triageStatus?: string | null;
+  prolificId?: string | null;
 }): Promise<void> {
   try {
     await supabaseAdmin.from("iho_submissions").insert({
@@ -506,7 +507,8 @@ async function logSubmission(input: {
       safety_flagged: input.safetyFlagged,
       followups: (input.followups ?? null) as never,
       triage_status: input.triageStatus ?? null,
-    });
+      prolific_id: input.prolificId ?? null,
+    } as never);
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
   }
@@ -516,6 +518,7 @@ async function logSubmission(input: {
     context: input.context,
     analysis: input.analysis,
     safetyFlagged: input.safetyFlagged,
+    prolificId: input.prolificId ?? null,
   });
 }
 
