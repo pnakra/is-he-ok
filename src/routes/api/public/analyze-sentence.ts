@@ -631,12 +631,14 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             context: input.context,
             analysis: JSON.stringify(SAFETY_RESPONSE),
             safetyFlagged: true,
+            followups: input.followups,
+            triageStatus: input.triageStatus ?? "SAFETY",
           });
           return buildResponse(SAFETY_RESPONSE, true);
         }
 
         // STEP 2 — Anthropic
-        const analysis = await callAnthropic(input.sentence, input.context);
+        const analysis = await callAnthropic(input.sentence, input.context, input.followups);
         if (!analysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
         }
@@ -648,6 +650,8 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           context: input.context,
           analysis: JSON.stringify(analysis),
           safetyFlagged: false,
+          followups: input.followups,
+          triageStatus: input.triageStatus,
         });
 
         return buildResponse(analysis, false);
