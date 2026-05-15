@@ -19,28 +19,34 @@ export type Database = {
           analysis: string | null
           context: string | null
           created_at: string
+          followups: Json | null
           id: string
           safety_flagged: boolean
           sentence: string
           session_id: string
+          triage_status: string | null
         }
         Insert: {
           analysis?: string | null
           context?: string | null
           created_at?: string
+          followups?: Json | null
           id?: string
           safety_flagged?: boolean
           sentence: string
           session_id: string
+          triage_status?: string | null
         }
         Update: {
           analysis?: string | null
           context?: string | null
           created_at?: string
+          followups?: Json | null
           id?: string
           safety_flagged?: boolean
           sentence?: string
           session_id?: string
+          triage_status?: string | null
         }
         Relationships: []
       }
