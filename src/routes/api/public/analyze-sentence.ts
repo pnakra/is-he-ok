@@ -232,6 +232,7 @@ interface AnalyzeBody {
   sessionId?: unknown;
   followups?: unknown;
   triageStatus?: unknown;
+  prolificId?: unknown;
 }
 
 interface NormalizedInput {
@@ -240,6 +241,7 @@ interface NormalizedInput {
   sessionId: string;
   followups: FollowupAnswers;
   triageStatus: string | null;
+  prolificId: string | null;
 }
 
 function pickAnswer(v: unknown): string | null {
