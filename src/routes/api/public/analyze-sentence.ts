@@ -34,6 +34,7 @@ const SAFETY_RESPONSE: AnalysisPayload = {
     "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
   did: "Please reach out to someone who can help you tonight. Is there someone you trust you can text right now?",
   tactic: null,
+  closing: "",
   resources: [
     {
       label: "The hotline — chat available",
@@ -51,6 +52,7 @@ const FAILURE_PAYLOAD: AnalysisPayload = {
     "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
   did: "Want to try sending it again?",
   tactic: null,
+  closing: "",
   resources: [
     {
       label: "r/relationships",
@@ -72,6 +74,7 @@ interface AnalysisPayload {
   wearing: string;
   did: string;
   tactic: string | null;
+  closing: string;
   resources: AnalysisResource[];
 }
 
