@@ -219,16 +219,34 @@ Style:
 - No em dashes.
 - Return only the JSON object — no prose, no backticks.`;
 
+export interface FollowupAnswers {
+  pattern?: string | null;
+  pushback?: string | null;
+  freedom?: string | null;
+  safety?: string | null;
+}
+
 interface AnalyzeBody {
   sentence?: unknown;
   context?: unknown;
   sessionId?: unknown;
+  followups?: unknown;
+  triageStatus?: unknown;
 }
 
 interface NormalizedInput {
   sentence: string;
   context: string | null;
   sessionId: string;
+  followups: FollowupAnswers;
+  triageStatus: string | null;
+}
+
+function pickAnswer(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.slice(0, 120);
 }
 
 function normalize(body: AnalyzeBody): NormalizedInput | null {
@@ -239,10 +257,28 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
   if (sentence.length > 4000) return null;
   if (ctxRaw.length > 4000) return null;
   if (sessionId.length > 128) return null;
+
+  const f =
+    body.followups && typeof body.followups === "object"
+      ? (body.followups as Record<string, unknown>)
+      : {};
+  const followups: FollowupAnswers = {
+    pattern: pickAnswer(f.pattern),
+    pushback: pickAnswer(f.pushback),
+    freedom: pickAnswer(f.freedom),
+    safety: pickAnswer(f.safety),
+  };
+  const triageStatus =
+    typeof body.triageStatus === "string" && body.triageStatus.trim()
+      ? body.triageStatus.trim().slice(0, 32)
+      : null;
+
   return {
     sentence,
     context: ctxRaw ? ctxRaw : null,
     sessionId,
+    followups,
+    triageStatus,
   };
 }
 
