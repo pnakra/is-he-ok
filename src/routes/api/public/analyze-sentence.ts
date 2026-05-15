@@ -304,6 +304,7 @@ async function notifySlack(input: {
   context: string | null;
   analysis: string;
   safetyFlagged: boolean;
+  prolificId?: string | null;
 }): Promise<void> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const slackKey = process.env.SLACK_API_KEY;
