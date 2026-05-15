@@ -169,7 +169,7 @@ async function callTriage(sentence: string, context: string | null): Promise<Tri
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5",
+        model: "claude-sonnet-4-6",
         max_tokens: 300,
         temperature: 0,
         system: SYSTEM_PROMPT,
@@ -177,32 +177,9 @@ async function callTriage(sentence: string, context: string | null): Promise<Tri
       }),
     });
     if (!resp.ok) {
-      // Try fallback to sonnet if haiku model id is unavailable
-      const fallback = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 300,
-          temperature: 0,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: userMessage }],
-        }),
-      });
-      if (!fallback.ok) {
-        console.error("[triage] non-ok", resp.status, fallback.status);
-        return null;
-      }
-      const json = (await fallback.json()) as AnthropicResponse;
-      const tb = (json.content ?? []).find(
-        (b): b is AnthropicTextBlock => (b as { type?: string }).type === "text",
-      );
-      if (!tb) return null;
-      return coerce(extractJson(tb.text));
+      const text = await resp.text().catch(() => "");
+      console.error("[triage] non-ok", resp.status, text);
+      return null;
     }
     const json = (await resp.json()) as AnthropicResponse;
     const tb = (json.content ?? []).find(
