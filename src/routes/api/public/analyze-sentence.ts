@@ -730,6 +730,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           safetyFlagged: false,
           followups: input.followups,
           triageStatus: input.triageStatus,
+          prolificId: input.prolificId,
         });
 
         return buildResponse(analysis, false);
