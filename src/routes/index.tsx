@@ -291,6 +291,7 @@ function Index() {
           sessionId,
           followups,
           triageStatus,
+          prolificId,
         }),
         signal: controller.signal,
       });
