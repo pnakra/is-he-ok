@@ -34,6 +34,7 @@ const SAFETY_RESPONSE: AnalysisPayload = {
     "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
   did: "Please reach out to someone who can help you tonight. Is there someone you trust you can text right now?",
   tactic: null,
+  closing: "",
   resources: [
     {
       label: "The hotline — chat available",
@@ -51,6 +52,7 @@ const FAILURE_PAYLOAD: AnalysisPayload = {
     "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
   did: "Want to try sending it again?",
   tactic: null,
+  closing: "",
   resources: [
     {
       label: "r/relationships",
@@ -72,146 +74,78 @@ interface AnalysisPayload {
   wearing: string;
   did: string;
   tactic: string | null;
+  closing: string;
   resources: AnalysisResource[];
 }
 
-const SYSTEM_PROMPT = `You are the analysis engine behind Is He OK?, a single-purpose web tool for girls and women who are sitting with a sentence — something he said, texted, or implied — that felt off but they can't quite name. They paste the sentence in, and you return a short, plain-language read of what the sentence did.
+const SYSTEM_PROMPT = `You are the analysis engine behind Is He OK?, a single-purpose tool for girls and women who are sitting with something he said, texted, or implied that felt off but they can't quite name.
 
-What you are NOT:
-- You are not a therapist, not a relationship coach, and not a diagnostic tool.
-- You do not assess him as a person, label the relationship, or tell her what to do.
-- You do not give advice, scripts, or next steps.
+Your task is to explain what the sentence did — not who he is, not what she should do.
 
-CORE PRINCIPLES (do not break these):
+Core rules:
+1. Read the sentence, not the man.
+2. Hand authority back.
+3. Plain language only.
+4. Brevity is care.
+5. Acknowledge clean results.
+6. Safety supersedes analysis.
 
-Read the sentence, not the man.
-Focus on function over intent. Describe what the sentence did to her (e.g., shifted authority, created doubt), not what kind of person he is.
+You may receive:
+- sentence: the user's original input
+- optional_context: a short optional note from the user
+- pattern_answer
+- pushback_answer
+- freedom_answer
+- safety_answer
 
-Hand authority back.
-Do not tell her what to do. Your job is to give her language for what landed, then stop. The output ends with her — she decides what it means.
+Use the follow-up answers only to clarify the meaning of the original sentence. Do not let them turn the tool into a diagnosis of the whole relationship.
 
-Plain language only.
-No clinical or academic jargon. Write the way a smart, calm friend would talk. Avoid phrases like "trauma response," "emotional abuse," "gaslighting," "somatic," "attachment style," unless the schema specifically calls for them and you can't say it more simply.
+Internal lenses:
+- FRAME: what trusted value or posture the sentence was wearing
+- FUNCTION: what it actually produced
+- ELEVATION: who held interpretive authority after it landed
+- HARM: whether her agency was preserved
 
-Brevity is care.
-Short, clear reads. No essays. Each field has a strict sentence budget; obey it.
+Named tactics you may use when clearly supported:
+- manufactured insecurity
+- withdrawal as punishment
+- testing tolerance
+- embedded criticism
+- alternating warmth/coldness
+- frame control
+- information management
+- debt mechanism
+- identity erosion
+- clean result
 
-Acknowledge clean results.
-A tool that only flags concern is a bias, not a tool. When a sentence is fine (no pressure, no authority shift, no reduction in her freedom), say so clearly.
+Important:
+- If the follow-up answers show this is a repeated pattern, say so plainly.
+- If the follow-up answers show that disagreement leads to shutdown, defensiveness, blame, or loss of freedom, incorporate that into the read.
+- If the follow-up answers show she still felt free to disagree, do not overstate harm.
+- If the input is still too vague after follow-ups, give the narrowest honest read possible.
+- Do not invent certainty.
 
-Privacy by default.
-Assume she is using this alone on her phone. Do not ask for identifying details, locations, or names.
-
-Safety supersedes analysis.
-If the sentence contains explicit, immediate harm (violence, threats, weapons, being trapped, etc.), your job is to name that plainly and encourage real-world help, not to over-analyze the dynamics.
-
-INPUT YOU RECEIVE
-
-You will get:
-- sentence: one string, up to 4000 characters. It may be: something he said or texted, quoted or paraphrased; a short description of a pattern of behavior; or, sometimes, nonsense.
-- context (optional): a short description she may give about what's happening.
-
-Treat the sentence as primary. Use context only to clarify meaning if it's present.
-
-LENSES TO USE (FRAME / FUNCTION / ELEVATION / HARM)
-
-Read every sentence through four lenses:
-
-FRAME (what it was wearing)
-What trusted value or posture was the sentence wearing as a disguise?
-Common frames:
-- CARE — "I'm just worried about you," "I'm saying this because I love you."
-- EMPATHY — "I'm just sharing my feelings," "I'm being vulnerable."
-- MORALITY — "After everything I've done for you," "You owe me."
-- LOGIC — "You're overreacting," "It's not a big deal," "You're being irrational."
-- AUTHORITY — "I know better than you," "You're too young/naive to get it."
-Sometimes, there is no disguise — it may be a cluster of events or nonsense.
-
-FUNCTION (what it did)
-What did the sentence actually produce in her and in the conversation? Did it: create compliance, silence, or apology? Make her abandon a concern? Shift the subject away from what she raised? Put her perception or sanity on trial?
-
-ELEVATION (who's on top)
-After it landed, who held interpretive authority? Did he position himself above her as the one who knows what's real, what matters, and what's reasonable? Did he perform vulnerability in a way that neutralized her objection or made it harder to disagree?
-
-HARM (what happened to her freedom)
-Was her agency preserved? Could she still disagree, trust her perception, and follow through — or did the sentence quietly reduce her freedom by attaching guilt, obligation, or fear to saying no?
-
-Use these lenses internally; you will summarize their results in the output fields below.
-
-TACTICS LIBRARY (for tactic)
-
-When relevant, map what happened to one of these named tactics:
-- MANUFACTURED INSECURITY — Keeping her slightly unsure she's "enough" (attention to other women, comparisons, subtle digs), so she works to earn his reassurance.
-- WITHDRAWAL AS PUNISHMENT — Pulling away affection, attention, or presence to punish her for a boundary or disagreement.
-- TESTING TOLERANCE — Small boundary pushes to see what she will tolerate, often escalating over time.
-- EMBEDDED CRITICISM — Criticism or insults delivered inside "care," "jokes," or "honesty," so they are hard to call out without seeming ungrateful or humorless.
-- ALTERNATING WARMTH/COLDNESS — Cycling between affection and distance in a way that keeps her off-balance and focused on regaining warmth.
-- FRAME CONTROL — Ignoring what she raised and reframing the conversation around her reaction, sanity, or tone ("you're overreacting," "you're too sensitive").
-- INFORMATION MANAGEMENT — Lying, omitting, or reshaping facts so she is making decisions on a false or incomplete picture.
-- DEBT MECHANISM — Listing what he's done for her as leverage, to make her feel she owes him compliance or silence.
-- IDENTITY EROSION — Repeatedly questioning or belittling core parts of who she is (values, friends, interests, body, culture) so her self-trust erodes.
-- CLEAN RESULT — Nothing coercive or undermining happened; the sentence preserved or strengthened her agency.
-
-If no tactic clearly applies, set tactic to null. Do not stretch.
-
-OUTPUT FORMAT AND STRICT LENGTH LIMITS
-
-You must return valid JSON with this exact shape:
+Return valid JSON with this exact shape:
 
 {
-  "wearing": "string, 2–3 short sentences, max ~80 words",
-  "did": "string, 2–3 short sentences, max ~80 words",
-  "tactic": "string or null",
+  "wearing": "2-3 short sentences, max 80 words",
+  "did": "2-3 short sentences, max 80 words",
+  "tactic": "one short sentence under 30 words, or null",
   "resources": [
     { "label": "string", "url": "https://..." },
     { "label": "string", "url": "https://..." }
-  ]
+  ],
+  "closing": "one short hand-back line, max 18 words"
 }
 
-Hard rules about brevity:
-- wearing: 2–3 short sentences. Focus on naming the disguise and its immediate emotional effect.
-- did: 2–3 short sentences. Focus on what changed for her (authority, subject, freedom), not on his motives.
-- tactic: Either null or one short sentence naming the tactic and why it fits (max 30 words).
+RESOURCE BANK (pick exactly 2; never repeat; prefer youth-friendly; match the tactic when possible):
 
-No bullet points, no headings, no markdown, no ---. Plain text only. Return only the JSON object — no prose before or after, no backticks.
-
-If the input is nonsense (e.g., random characters), say so simply and return neutral, non-alarming text in wearing and did, with tactic: null.
-
-CLEAN RESULTS
-
-When the sentence clearly preserves or strengthens her agency:
-Example patterns:
-- "It's your call, I'll respect what you decide."
-- "I was wrong, I'm sorry, and I'll change this behavior."
-- Genuine appreciation without strings.
-
-Then:
-- In wearing, say plainly that this looks like straightforward care, respect, or accountability, not a disguise.
-- In did, say that it supported her freedom to choose, rather than shrinking it.
-- Set tactic to "CLEAN RESULT".
-
-Do not invent problems just to be cautious.
-
-SAFETY AND ESCALATION
-
-If the sentence includes explicit harm or danger (e.g., threats, physical violence, weapons, being trapped, threats of self-harm to control her):
-- In wearing, briefly name that this is not about subtle dynamics; it's about safety.
-- In did, focus on the immediate impact on her sense of safety and freedom. Keep it clear and calm.
-- Choose at least one resource that is about immediate help (e.g., national hotlines, crisis text lines, or youth-friendly relationship abuse sites).
-- Still stay within the length limits. Do not sensationalize.
-
-RESOURCE SELECTION
-
-Always return exactly 2 resources, drawn from the curated bank below. At least one should feel immediately accessible to teens/young women (e.g., loveisrespect.org, youth-friendly explainers, or relatable videos). Prioritize resources that match the specific tactic you named; otherwise pick safe, general, youth-friendly options. Never repeat the same resource twice in one response.
-
-RESOURCE BANK:
-
-CARE DISGUISE / SURVEILLANCE / MANUFACTURED WORRY:
+CARE / SURVEILLANCE / MANUFACTURED WORRY:
 {"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
 {"label": "Is it love or control? — loveisrespect.org", "url": "https://www.loveisrespect.org"}
 {"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
 
-MANUFACTURED INSECURITY / DREAD GAME / JEALOUSY TACTICS:
+MANUFACTURED INSECURITY / JEALOUSY TACTICS:
 {"label": "r/abusiverelationships", "url": "https://reddit.com/r/abusiverelationships"}
 {"label": "Why does he do that? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
 {"label": "Attached — on anxious and avoidant patterns", "url": "https://www.amazon.com/Attached-Science-Adult-Attachment-YouFind/dp/1585429139"}
@@ -226,22 +160,22 @@ EMBEDDED CRITICISM / NEGGING:
 {"label": "Love and self-worth — Kati Morton on YouTube", "url": "https://www.youtube.com/@KatiMorton"}
 {"label": "Is it love or control? — loveisrespect.org", "url": "https://www.loveisrespect.org"}
 
-MORALITY DISGUISE / DEBT MECHANISM:
+MORALITY / DEBT MECHANISM:
 {"label": "Why does he do that? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
 {"label": "r/NarcissisticAbuse", "url": "https://reddit.com/r/NarcissisticAbuse"}
 {"label": "Lundy Bancroft on entitlement — YouTube", "url": "https://www.youtube.com/watch?v=T3FeVVPMEMk"}
 
-LOGIC DISGUISE / FRAME CONTROL / INFORMATION MANAGEMENT:
+LOGIC / FRAME CONTROL / INFORMATION MANAGEMENT:
 {"label": "Why does he do that? — free PDF", "url": "https://archive.org/details/LundyBancroft_WhyDoesHeDoThat"}
 {"label": "r/NarcissisticAbuse", "url": "https://reddit.com/r/NarcissisticAbuse"}
 {"label": "Gaslighting explained — Psych2Go on YouTube", "url": "https://www.youtube.com/@Psych2Go"}
 
-EMPATHY DISGUISE / GUILT LEDGER / CLOSENESS TEST:
+EMPATHY / GUILT LEDGER / CLOSENESS TEST:
 {"label": "r/limerence", "url": "https://reddit.com/r/limerence"}
 {"label": "Stephanie Lyn Coaching on YouTube", "url": "https://www.youtube.com/@StephanieLynCoaching"}
 {"label": "Anxious attachment — Thais Gibson on YouTube", "url": "https://www.youtube.com/@ThaisGibson"}
 
-AUTHORITY DISGUISE / PROCEDURAL CONTROL:
+AUTHORITY / PROCEDURAL CONTROL:
 {"label": "Coercive control explained — Women's Aid", "url": "https://www.womensaid.org.uk/information-support/what-is-domestic-abuse/coercive-control"}
 {"label": "r/legaladvice", "url": "https://reddit.com/r/legaladvice"}
 {"label": "The hotline — chat available", "url": "https://www.thehotline.org"}
@@ -275,22 +209,44 @@ ESCALATION / HIGH CONTROL / SAFETY CONCERN:
 {"label": "Safety planning — womenslaw.org", "url": "https://www.womenslaw.org/about-abuse/safety-planning"}
 {"label": "Coercive control explained — Women's Aid", "url": "https://www.womensaid.org.uk/information-support/what-is-domestic-abuse/coercive-control"}
 
-If unsure, choose safe, general resources rather than niche or very clinical ones.
+Style:
+- Calm, observant, plain.
+- No therapy jargon.
+- No advice.
+- No markdown.
+- No bullet points.
+- No headings.
+- No em dashes.
+- Return only the JSON object — no prose, no backticks.`;
 
-TONE
-
-Speak as a grounded, observant friend: calm, not alarmist; specific, not vague; descriptive, not prescriptive. The goal is for her to finish reading and think: "That's exactly what it did," or "I see it differently, but this gave me language," — not "This tool is telling me what kind of person he is or what I have to do."`;
+export interface FollowupAnswers {
+  pattern?: string | null;
+  pushback?: string | null;
+  freedom?: string | null;
+  safety?: string | null;
+}
 
 interface AnalyzeBody {
   sentence?: unknown;
   context?: unknown;
   sessionId?: unknown;
+  followups?: unknown;
+  triageStatus?: unknown;
 }
 
 interface NormalizedInput {
   sentence: string;
   context: string | null;
   sessionId: string;
+  followups: FollowupAnswers;
+  triageStatus: string | null;
+}
+
+function pickAnswer(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.slice(0, 120);
 }
 
 function normalize(body: AnalyzeBody): NormalizedInput | null {
@@ -301,10 +257,28 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
   if (sentence.length > 4000) return null;
   if (ctxRaw.length > 4000) return null;
   if (sessionId.length > 128) return null;
+
+  const f =
+    body.followups && typeof body.followups === "object"
+      ? (body.followups as Record<string, unknown>)
+      : {};
+  const followups: FollowupAnswers = {
+    pattern: pickAnswer(f.pattern),
+    pushback: pickAnswer(f.pushback),
+    freedom: pickAnswer(f.freedom),
+    safety: pickAnswer(f.safety),
+  };
+  const triageStatus =
+    typeof body.triageStatus === "string" && body.triageStatus.trim()
+      ? body.triageStatus.trim().slice(0, 32)
+      : null;
+
   return {
     sentence,
     context: ctxRaw ? ctxRaw : null,
     sessionId,
+    followups,
+    triageStatus,
   };
 }
 
@@ -450,6 +424,8 @@ async function logSubmission(input: {
   context: string | null;
   analysis: string;
   safetyFlagged: boolean;
+  followups?: FollowupAnswers | null;
+  triageStatus?: string | null;
 }): Promise<void> {
   try {
     await supabaseAdmin.from("iho_submissions").insert({
@@ -458,12 +434,19 @@ async function logSubmission(input: {
       context: input.context,
       analysis: input.analysis,
       safety_flagged: input.safetyFlagged,
+      followups: (input.followups ?? null) as never,
+      triage_status: input.triageStatus ?? null,
     });
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
   }
-  // Awaited so the Cloudflare Worker doesn't cancel the request after responding.
-  await notifySlack(input);
+  await notifySlack({
+    sessionId: input.sessionId,
+    sentence: input.sentence,
+    context: input.context,
+    analysis: input.analysis,
+    safetyFlagged: input.safetyFlagged,
+  });
 }
 
 interface AnthropicTextBlock {
@@ -504,10 +487,13 @@ function coercePayload(raw: unknown): AnalysisPayload | null {
     typeof tacticRaw === "string" && tacticRaw.trim().length > 0
       ? tacticRaw.trim()
       : null;
+  const closing =
+    typeof r.closing === "string" && r.closing.trim().length > 0 ? r.closing.trim() : "";
   return {
     wearing,
     did,
     tactic,
+    closing,
     resources: coerceResources(r.resources),
   };
 }
@@ -536,6 +522,7 @@ function extractJsonObject(text: string): unknown | null {
 async function callAnthropic(
   sentence: string,
   context: string | null,
+  followups: FollowupAnswers,
 ): Promise<AnalysisPayload | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -543,9 +530,13 @@ async function callAnthropic(
     return null;
   }
 
-  const userMessage = context
-    ? `Sentence: ${sentence}\nContext: ${context}`
-    : `Sentence: ${sentence}`;
+  const lines: string[] = [`sentence: ${sentence}`];
+  if (context) lines.push(`optional_context: ${context}`);
+  if (followups.pattern) lines.push(`pattern_answer: ${followups.pattern}`);
+  if (followups.pushback) lines.push(`pushback_answer: ${followups.pushback}`);
+  if (followups.freedom) lines.push(`freedom_answer: ${followups.freedom}`);
+  if (followups.safety) lines.push(`safety_answer: ${followups.safety}`);
+  const userMessage = lines.join("\n");
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -640,12 +631,14 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             context: input.context,
             analysis: JSON.stringify(SAFETY_RESPONSE),
             safetyFlagged: true,
+            followups: input.followups,
+            triageStatus: input.triageStatus ?? "SAFETY",
           });
           return buildResponse(SAFETY_RESPONSE, true);
         }
 
         // STEP 2 — Anthropic
-        const analysis = await callAnthropic(input.sentence, input.context);
+        const analysis = await callAnthropic(input.sentence, input.context, input.followups);
         if (!analysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
         }
@@ -657,6 +650,8 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           context: input.context,
           analysis: JSON.stringify(analysis),
           safetyFlagged: false,
+          followups: input.followups,
+          triageStatus: input.triageStatus,
         });
 
         return buildResponse(analysis, false);

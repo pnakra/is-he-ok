@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicTriageSentenceRouteImport } from './routes/api/public/triage-sentence'
 import { Route as ApiPublicAnalyzeSentenceRouteImport } from './routes/api/public/analyze-sentence'
 
 const AboutRoute = AboutRouteImport.update({
@@ -21,6 +22,11 @@ const AboutRoute = AboutRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTriageSentenceRoute = ApiPublicTriageSentenceRouteImport.update({
+  id: '/api/public/triage-sentence',
+  path: '/api/public/triage-sentence',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicAnalyzeSentenceRoute =
@@ -34,30 +40,47 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
+  '/api/public/triage-sentence': typeof ApiPublicTriageSentenceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
+  '/api/public/triage-sentence': typeof ApiPublicTriageSentenceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
+  '/api/public/triage-sentence': typeof ApiPublicTriageSentenceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/api/public/analyze-sentence'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/api/public/analyze-sentence'
+    | '/api/public/triage-sentence'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/api/public/analyze-sentence'
-  id: '__root__' | '/' | '/about' | '/api/public/analyze-sentence'
+  to:
+    | '/'
+    | '/about'
+    | '/api/public/analyze-sentence'
+    | '/api/public/triage-sentence'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/api/public/analyze-sentence'
+    | '/api/public/triage-sentence'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   ApiPublicAnalyzeSentenceRoute: typeof ApiPublicAnalyzeSentenceRoute
+  ApiPublicTriageSentenceRoute: typeof ApiPublicTriageSentenceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +99,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/triage-sentence': {
+      id: '/api/public/triage-sentence'
+      path: '/api/public/triage-sentence'
+      fullPath: '/api/public/triage-sentence'
+      preLoaderRoute: typeof ApiPublicTriageSentenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/analyze-sentence': {
       id: '/api/public/analyze-sentence'
       path: '/api/public/analyze-sentence'
@@ -90,6 +120,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   ApiPublicAnalyzeSentenceRoute: ApiPublicAnalyzeSentenceRoute,
+  ApiPublicTriageSentenceRoute: ApiPublicTriageSentenceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
