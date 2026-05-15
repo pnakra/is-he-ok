@@ -275,12 +275,21 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
       ? body.triageStatus.trim().slice(0, 32)
       : null;
 
+  let prolificId: string | null = null;
+  if (typeof body.prolificId === "string") {
+    const t = body.prolificId.trim();
+    if (t.length > 0 && t.length <= 64 && /^[A-Za-z0-9_-]+$/.test(t)) {
+      prolificId = t;
+    }
+  }
+
   return {
     sentence,
     context: ctxRaw ? ctxRaw : null,
     sessionId,
     followups,
     triageStatus,
+    prolificId,
   };
 }
 
