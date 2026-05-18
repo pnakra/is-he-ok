@@ -509,19 +509,8 @@ function Index() {
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    Paste one sentence.
-                  </h1>
-                  <p
-                    className="mt-3 text-foreground"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "17px",
-                      lineHeight: 1.6,
-                      color: "var(--color-muted-foreground)",
-                    }}
-                  >
                     Tell us what he said.
-                  </p>
+                  </h1>
                   <p
                     className="mt-2"
                     style={{
