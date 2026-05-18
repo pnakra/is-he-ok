@@ -520,8 +520,7 @@ function Index() {
                       color: "var(--color-muted-foreground)",
                     }}
                   >
-                    A small tool for noticing what it may have meant, how it may have landed,
-                    and what it may be worth paying attention to.
+                    Tell us what he said.
                   </p>
                   <p
                     className="mt-2"
