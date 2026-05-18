@@ -69,10 +69,10 @@ interface TriageResponse {
 }
 
 const FAILURE_TEXT =
-  "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.";
+  "Something didn't work on our end. Please try again in a moment.";
 
-const EMPTY_HINT = "Type something he said — even just a few words.";
-const SHORT_HINT = "A little more context helps — what did he say exactly?";
+const EMPTY_HINT = "Add the sentence you want to look at.";
+const SHORT_HINT = "A little more text helps — what did he actually say?";
 const TIMEOUT_HINT = "That's taking longer than it should. Try again?";
 
 const SAID_MAX = 500;
@@ -81,22 +81,24 @@ const CONTEXT_MAX = 400;
 const REQUEST_TIMEOUT_MS = 20000;
 
 const SUGGESTION_CHIPS: string[] = [
-  "he said he was just worried about me",
-  "he said it as a joke but it wasn't funny",
-  "he brought up everything he's done for me",
-  "he said i always do this",
+  "You're too sensitive",
+  "I was just joking",
+  "Why are you making this a big deal?",
+  "You always do this",
+  "You're overthinking it",
+  "Calm down",
 ];
 
 const LOADING_PHRASES = [
   "Reading it...",
-  "Looking at what it did...",
-  "Almost...",
+  "Looking at how it landed...",
+  "Almost there...",
 ];
 
 const TRIAGE_PHRASES = ["Reading what you sent..."];
 
 const FALLBACK_RESOURCES: Resource[] = [
-  { label: "National Domestic Violence Hotline", url: "https://www.thehotline.org" },
+  { label: "Healthy vs unhealthy relationship signs — love is respect", url: "https://www.loveisrespect.org/relationship-spectrum/" },
 ];
 
 function makeFailureAnalysis(): Analysis {
@@ -140,26 +142,26 @@ function Card({
   return (
     <div
       style={{
-        border: "1px solid #2A2522",
-        borderRadius: "4px",
-        background: "#1A1714",
+        border: "1px solid var(--color-border)",
+        borderRadius: "10px",
+        background: "var(--color-surface)",
       }}
     >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="flex w-full items-center justify-between px-5 py-4 text-left"
         style={{ background: "transparent", border: 0, cursor: "pointer" }}
       >
         <span
-          className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+          className="text-[15px] font-medium text-foreground"
           style={{ fontFamily: "var(--font-sans)" }}
         >
           {label}
         </span>
         <span
-          className="text-[18px] leading-none text-primary"
+          className="text-[18px] leading-none text-muted-foreground"
           aria-hidden="true"
           style={{ fontFamily: "var(--font-sans)" }}
         >
@@ -178,9 +180,8 @@ function Card({
           className="text-[16px] text-foreground"
           style={{
             fontFamily: "var(--font-sans)",
-            lineHeight: 1.8,
-            padding: "16px",
-            paddingTop: "0px",
+            lineHeight: 1.65,
+            padding: "0 20px 18px",
           }}
         >
           {children}
@@ -235,19 +236,17 @@ function Index() {
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const outputRef = useRef<HTMLElement | null>(null);
 
-  // Auto-grow primary textarea
   useEffect(() => {
     const el = taRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.max(el.scrollHeight, 160) + "px";
+    el.style.height = Math.max(el.scrollHeight, 120) + "px";
   }, [said]);
 
-  // Cycle loading phrases
   useEffect(() => {
     if (state !== "loading" && state !== "triaging") return;
     setPhraseIdx(0);
-    if (state === "triaging") return; // single phrase
+    if (state === "triaging") return;
     const id = setInterval(() => {
       setPhraseIdx((i) => (i + 1) % LOADING_PHRASES.length);
     }, 1500);
@@ -375,10 +374,8 @@ function Index() {
       if (triage.ask_pushback) asked.push(FOLLOWUP_QUESTIONS.pushback);
       if (triage.ask_freedom) asked.push(FOLLOWUP_QUESTIONS.freedom);
       if (triage.ask_safety) asked.push(FOLLOWUP_QUESTIONS.safety);
-      // Cap at 3 per spec
       const capped = asked.slice(0, 3);
       if (capped.length === 0) {
-        // model said followup but flagged none — analyze as READY
         await analyzeAndShow(sentence, ctx, {}, "READY", false);
         return;
       }
@@ -421,7 +418,6 @@ function Index() {
 
   async function handleFollowupSubmit() {
     if (isBusy) return;
-    // All shown questions must be answered
     const allAnswered = askedQuestions.every((q) => !!answers[q.key]);
     if (!allAnswered) return;
     const ctx = optionalContext.trim() ? optionalContext.trim() : null;
@@ -454,18 +450,32 @@ function Index() {
 
   const inputDimmed = isBusy;
 
+  const chipStyleBase: React.CSSProperties = {
+    fontFamily: "var(--font-sans)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "8px",
+    padding: "8px 14px",
+    background: "var(--color-surface)",
+    color: "var(--color-foreground)",
+    cursor: "pointer",
+    transition: "background 140ms ease, border-color 140ms ease",
+  };
+
   return (
     <main className="min-h-screen w-full bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[640px] flex-col px-10 py-10 sm:px-12">
+      <div className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col px-6 py-8 sm:px-10 sm:py-10">
         {/* Brand */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium normal-case tracking-[0.22em] text-muted-foreground">
+          <span
+            className="text-[15px] font-medium text-foreground"
+            style={{ fontFamily: "var(--font-sans)" }}
+          >
             is he ok?
           </span>
           <Link
             to="/about"
-            className="text-[13px] text-muted-foreground no-underline hover:underline"
-            style={{ fontFamily: "var(--font-sans)" }}
+            className="text-[14px] text-muted-foreground no-underline hover:text-foreground hover:underline"
+            style={{ fontFamily: "var(--font-sans)", textUnderlineOffset: "3px" }}
           >
             About
           </Link>
@@ -475,226 +485,258 @@ function Index() {
         <section
           className={
             state === "empty"
-              ? "flex flex-1 flex-col justify-center py-16"
-              : "flex flex-1 flex-col py-12"
+              ? "flex flex-1 flex-col justify-center py-12"
+              : "flex flex-1 flex-col py-10"
           }
         >
-          {/* Input area */}
           {(state === "empty" || state === "triaging") && (
-          <div
-            className={
-              "transition-opacity duration-500 " +
-              (inputDimmed ? "opacity-50" : "opacity-100")
-            }
-            aria-hidden={state === "triaging"}
-          >
-            {state === "empty" && (
-              <div className="mb-6 flex flex-wrap gap-2">
-                {SUGGESTION_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => {
-                      setSaid(chip);
-                      taRef.current?.focus();
-                    }}
-                    className="text-[13px] text-muted-foreground transition-colors hover:text-foreground hover:border-muted-foreground"
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      border: "1px solid #3A3532",
-                      borderRadius: "100px",
-                      padding: "6px 14px",
-                      background: "transparent",
-                    }}
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <label htmlFor="said" className="sr-only">
-              What he said
-            </label>
-            <textarea
-              id="said"
-              ref={taRef}
-              value={said}
-              onChange={(e) => {
-                const v = e.target.value.slice(0, SAID_MAX);
-                setSaid(v);
-                if (timedOut) setTimedOut(false);
-              }}
-              disabled={isBusy}
-              maxLength={SAID_MAX}
-              aria-label="Type what he said"
-              placeholder="Type or paste what he said, or pick one above to start..."
-              rows={4}
+            <div
               className={
-                "quiet-input block w-full px-0 py-3 text-[17px] text-foreground min-h-[120px]"
+                "transition-opacity duration-500 " +
+                (inputDimmed ? "opacity-50" : "opacity-100")
               }
-              style={{
-                fontFamily: "var(--font-sans)",
-                lineHeight: 1.8,
-                maxHeight: `calc(${17 * 1.8 * 6}px + 1.5rem)`,
-                overflowY: "auto",
-              }}
-            />
-
-            {/* Helper text under textarea */}
-            {state === "empty" && (
-              <p
-                className="mt-2 text-[12px] leading-[1.6] text-muted-foreground"
-                style={{ fontFamily: "var(--font-sans)" }}
-              >
-                Paste one thing he said, texted, or implied. If the meaning depends on
-                what happened after, we may ask 2–3 quick questions.
-              </p>
-            )}
-
-            {said.length >= SAID_COUNTER_AT && (
-              <p
-                className="mt-2 text-right text-[11px] text-muted-foreground"
-                aria-live="polite"
-                style={{ fontFamily: "var(--font-sans)" }}
-              >
-                {said.length >= SAID_MAX
-                  ? "That's enough to work with."
-                  : `${SAID_MAX - said.length} characters left`}
-              </p>
-            )}
-
-            {/* Optional context */}
-            {state === "empty" && (
-              <div className="mt-5">
-                {!showContext ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowContext(true)}
-                    className="text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+              aria-hidden={state === "triaging"}
+            >
+              {state === "empty" && (
+                <header className="mb-8">
+                  <h1
+                    className="text-foreground"
                     style={{
                       fontFamily: "var(--font-sans)",
-                      background: "transparent",
-                      border: 0,
-                      padding: 0,
-                      cursor: "pointer",
+                      fontSize: "30px",
+                      lineHeight: 1.2,
+                      fontWeight: 600,
+                      letterSpacing: "-0.01em",
                     }}
                   >
-                    + Anything important this leaves out? (optional)
-                  </button>
-                ) : (
-                  <div>
-                    <label
-                      htmlFor="ctx"
-                      className="block text-[12px] text-muted-foreground"
-                      style={{ fontFamily: "var(--font-sans)" }}
-                    >
-                      Anything important this leaves out?{" "}
-                      <span className="opacity-60">Optional — one or two lines.</span>
-                    </label>
-                    <textarea
-                      id="ctx"
-                      value={optionalContext}
-                      onChange={(e) =>
-                        setOptionalContext(e.target.value.slice(0, CONTEXT_MAX))
-                      }
-                      disabled={isBusy}
-                      maxLength={CONTEXT_MAX}
-                      placeholder="Only if it changes the meaning."
-                      rows={2}
-                      className="quiet-input mt-2 block w-full px-0 py-2 text-[15px] text-foreground"
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        lineHeight: 1.7,
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+                    Paste one sentence.
+                  </h1>
+                  <p
+                    className="mt-3 text-foreground"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "17px",
+                      lineHeight: 1.6,
+                      color: "var(--color-muted-foreground)",
+                    }}
+                  >
+                    A small tool for noticing what it may have meant, how it may have landed,
+                    and what it may be worth paying attention to.
+                  </p>
+                  <p
+                    className="mt-2"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "15px",
+                      lineHeight: 1.6,
+                      color: "var(--color-text-faint)",
+                    }}
+                  >
+                    Not a verdict. Just a clearer read.
+                  </p>
+                </header>
+              )}
 
-            {state === "empty" && (
-              <div className="mt-6 text-center">
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isBusy}
-                  className="inline-flex min-h-[48px] items-center justify-center bg-primary px-8 py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
-                  style={{ fontFamily: "var(--font-sans)" }}
+              <label htmlFor="said" className="sr-only">
+                The sentence
+              </label>
+              <textarea
+                id="said"
+                ref={taRef}
+                value={said}
+                onChange={(e) => {
+                  const v = e.target.value.slice(0, SAID_MAX);
+                  setSaid(v);
+                  if (timedOut) setTimedOut(false);
+                }}
+                disabled={isBusy}
+                maxLength={SAID_MAX}
+                aria-label="The sentence you want to look at"
+                placeholder="e.g. “you always do this”"
+                rows={3}
+                className="quiet-input block w-full px-4 py-3 text-[17px] text-foreground min-h-[120px]"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  lineHeight: 1.6,
+                }}
+              />
+
+              {said.length >= SAID_COUNTER_AT && (
+                <p
+                  className="mt-2 text-right text-[13px]"
+                  aria-live="polite"
+                  style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
                 >
-                  is he ok?
-                </button>
-                {showEmptyHint && (
+                  {said.length >= SAID_MAX
+                    ? "That's enough to work with."
+                    : `${SAID_MAX - said.length} characters left`}
+                </p>
+              )}
+
+              {state === "empty" && (
+                <div className="mt-5">
                   <p
-                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
-                    role="status"
-                    aria-live="polite"
-                    style={{ fontFamily: "var(--font-sans)" }}
+                    className="mb-2 text-[14px]"
+                    style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
                   >
-                    {EMPTY_HINT}
+                    Or pick one to start:
                   </p>
-                )}
-                {!showEmptyHint && showShortHint && (
-                  <p
-                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
-                    aria-live="polite"
-                    style={{ fontFamily: "var(--font-sans)" }}
-                  >
-                    {SHORT_HINT}
-                  </p>
-                )}
-                {timedOut && (
-                  <p
-                    className="mt-4 text-[13px] leading-[1.6] text-muted-foreground"
-                    role="status"
-                    aria-live="polite"
-                    style={{ fontFamily: "var(--font-sans)" }}
-                  >
-                    {TIMEOUT_HINT}{" "}
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTION_CHIPS.map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => {
+                          setSaid(chip);
+                          taRef.current?.focus();
+                        }}
+                        className="text-[14px] hover:bg-[var(--color-surface-2)] hover:border-[color-mix(in_oklab,var(--color-foreground)_20%,var(--color-border))]"
+                        style={chipStyleBase}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Optional context */}
+              {state === "empty" && (
+                <div className="mt-6">
+                  {!showContext ? (
                     <button
                       type="button"
-                      onClick={handleRetry}
-                      className="text-primary underline-offset-2 hover:underline"
+                      onClick={() => setShowContext(true)}
+                      className="text-[14px] text-muted-foreground hover:text-foreground hover:underline"
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        background: "transparent",
+                        border: 0,
+                        padding: 0,
+                        cursor: "pointer",
+                        textUnderlineOffset: "3px",
+                      }}
                     >
-                      Try again
+                      + Add a little context (optional)
                     </button>
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+                  ) : (
+                    <div>
+                      <label
+                        htmlFor="ctx"
+                        className="block text-[14px]"
+                        style={{ fontFamily: "var(--font-sans)", color: "var(--color-muted-foreground)" }}
+                      >
+                        Add a little context (optional)
+                      </label>
+                      <p
+                        className="mt-1 text-[13px]"
+                        style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
+                      >
+                        You can include what happened before, how he said it, or what felt off.
+                      </p>
+                      <textarea
+                        id="ctx"
+                        value={optionalContext}
+                        onChange={(e) =>
+                          setOptionalContext(e.target.value.slice(0, CONTEXT_MAX))
+                        }
+                        disabled={isBusy}
+                        maxLength={CONTEXT_MAX}
+                        placeholder="One or two lines."
+                        rows={2}
+                        className="quiet-input mt-2 block w-full px-4 py-2 text-[15px] text-foreground"
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          lineHeight: 1.6,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {state === "empty" && (
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isBusy}
+                    className="inline-flex min-h-[48px] items-center justify-center bg-primary px-7 py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                    style={{ fontFamily: "var(--font-sans)", borderRadius: "10px" }}
+                  >
+                    Read the sentence
+                  </button>
+                  {showEmptyHint && (
+                    <p
+                      className="mt-3 text-[14px] leading-[1.5]"
+                      role="status"
+                      aria-live="polite"
+                      style={{ fontFamily: "var(--font-sans)", color: "var(--color-muted-foreground)" }}
+                    >
+                      {EMPTY_HINT}
+                    </p>
+                  )}
+                  {!showEmptyHint && showShortHint && (
+                    <p
+                      className="mt-3 text-[14px] leading-[1.5]"
+                      aria-live="polite"
+                      style={{ fontFamily: "var(--font-sans)", color: "var(--color-muted-foreground)" }}
+                    >
+                      {SHORT_HINT}
+                    </p>
+                  )}
+                  {timedOut && (
+                    <p
+                      className="mt-3 text-[14px] leading-[1.5]"
+                      role="status"
+                      aria-live="polite"
+                      style={{ fontFamily: "var(--font-sans)", color: "var(--color-muted-foreground)" }}
+                    >
+                      {TIMEOUT_HINT}{" "}
+                      <button
+                        type="button"
+                        onClick={handleRetry}
+                        className="text-primary hover:underline"
+                        style={{ textUnderlineOffset: "3px" }}
+                      >
+                        Try again
+                      </button>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Triage / loading line */}
           {(state === "triaging" || state === "loading") && (
             <div className="mt-6 min-h-[24px] text-center" aria-live="polite">
               <span
                 key={phraseIdx + state}
-                className="animate-soft-fade text-[14px] text-muted-foreground"
-                style={{ animationIterationCount: "infinite" }}
+                className="animate-soft-fade text-[14px]"
+                style={{ animationIterationCount: "infinite", color: "var(--color-muted-foreground)" }}
               >
                 {state === "triaging" ? TRIAGE_PHRASES[0] : LOADING_PHRASES[phraseIdx]}
               </span>
             </div>
           )}
 
-          {/* Followup screen */}
+          {/* Followup */}
           {state === "followup" && (
-            <div className="animate-rise-in mx-auto w-full max-w-[520px]">
+            <div className="animate-rise-in mx-auto w-full max-w-[600px]">
               <p
-                className="text-[14px] leading-[1.6] text-muted-foreground"
-                style={{ fontFamily: "var(--font-sans)" }}
+                className="text-[15px] leading-[1.6]"
+                style={{ fontFamily: "var(--font-sans)", color: "var(--color-muted-foreground)" }}
               >
                 {askedQuestions.length >= 3
-                  ? "This could go a few different ways. Three quick questions so I can read it more cleanly."
-                  : "This could mean different things depending on what happened around it. Two quick questions so I don't overread it."}
+                  ? "A few quick questions so the read is more grounded."
+                  : "Two quick questions so the read is more grounded."}
               </p>
 
-              <div className="mt-6 flex flex-col gap-8">
+              <div className="mt-6 flex flex-col gap-7">
                 {askedQuestions.map((q) => (
                   <div key={q.key}>
                     <p
-                      className="text-[15px] leading-[1.5] text-foreground"
+                      className="text-[16px] leading-[1.5] text-foreground"
                       style={{ fontFamily: "var(--font-sans)" }}
                     >
                       {q.prompt}
@@ -709,18 +751,19 @@ function Index() {
                             onClick={() =>
                               setAnswers((prev) => ({ ...prev, [q.key]: opt }))
                             }
-                            className="text-[13px] transition-colors"
+                            className="text-[14px]"
                             style={{
                               fontFamily: "var(--font-sans)",
                               border: selected
-                                ? "1px solid #C4784A"
-                                : "1px solid #3A3532",
-                              borderRadius: "100px",
-                              padding: "6px 14px",
+                                ? "1px solid var(--color-primary)"
+                                : "1px solid var(--color-border)",
+                              borderRadius: "8px",
+                              padding: "8px 14px",
                               background: selected
-                                ? "color-mix(in oklab, #C4784A 16%, transparent)"
-                                : "transparent",
-                              color: selected ? "var(--color-primary)" : undefined,
+                                ? "var(--color-accent-soft)"
+                                : "var(--color-surface)",
+                              color: selected ? "var(--color-accent-hover)" : "var(--color-foreground)",
+                              cursor: "pointer",
                             }}
                           >
                             {opt}
@@ -732,15 +775,15 @@ function Index() {
                 ))}
               </div>
 
-              <div className="mt-8 text-center">
+              <div className="mt-8">
                 <button
                   type="button"
                   onClick={handleFollowupSubmit}
                   disabled={
                     isBusy || !askedQuestions.every((q) => !!answers[q.key])
                   }
-                  className="inline-flex min-h-[44px] items-center justify-center bg-primary px-7 py-2 text-[14px] font-medium text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--color-primary)_88%,white_12%)] disabled:cursor-not-allowed disabled:opacity-40"
-                  style={{ fontFamily: "var(--font-sans)" }}
+                  className="inline-flex min-h-[44px] items-center justify-center bg-primary px-6 py-2 text-[14px] font-medium text-primary-foreground transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ fontFamily: "var(--font-sans)", borderRadius: "10px" }}
                 >
                   Continue
                 </button>
@@ -748,12 +791,14 @@ function Index() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="text-[12px] text-muted-foreground hover:text-foreground"
+                    className="text-[13px] hover:underline"
                     style={{
                       fontFamily: "var(--font-sans)",
                       background: "transparent",
                       border: 0,
                       cursor: "pointer",
+                      color: "var(--color-muted-foreground)",
+                      textUnderlineOffset: "3px",
                     }}
                   >
                     Start over
@@ -769,45 +814,58 @@ function Index() {
               ref={outputRef}
               role="region"
               aria-label="Analysis"
-              className="animate-rise-in mx-auto w-full max-w-[520px]"
+              className="animate-rise-in mx-auto w-full max-w-[640px]"
             >
               {submittedSentence && (
                 <blockquote
-                  className="font-display italic text-primary"
+                  className="font-display"
                   style={{
-                    fontSize: "16px",
-                    lineHeight: 1.6,
-                    borderLeft: "2px solid #C4784A",
-                    paddingLeft: "16px",
-                    marginBottom: "12px",
+                    fontSize: "18px",
+                    lineHeight: 1.55,
+                    fontStyle: "italic",
+                    color: "var(--color-foreground)",
+                    background: "var(--color-surface-2)",
+                    borderLeft: "3px solid var(--color-primary)",
+                    padding: "14px 18px",
+                    borderRadius: "6px",
+                    marginBottom: "20px",
                   }}
                 >
-                  {submittedSentence}
+                  “{submittedSentence}”
                 </blockquote>
               )}
 
-              {/* Read-with-context microcopy */}
               <p
-                className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
-                style={{ fontFamily: "var(--font-sans)", marginBottom: "20px" }}
+                className="text-[14px]"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  color: "var(--color-muted-foreground)",
+                  marginBottom: "20px",
+                }}
               >
                 {usedFollowups ? "Read with a little more context" : "Read from the sentence alone"}
               </p>
 
               <div className="flex flex-col gap-3">
-                <Card label="WHAT IT WAS WEARING" defaultOpen>
+                <Card label="How it came across" defaultOpen>
                   {analysis.wearing}
                 </Card>
-                {analysis.did && <Card label="WHAT IT DID">{analysis.did}</Card>}
+                {analysis.did && <Card label="What it did to you">{analysis.did}</Card>}
                 {analysis.tactic && (
-                  <Card label="WHAT THIS IS">{analysis.tactic}</Card>
+                  <Card label="What may be going on">{analysis.tactic}</Card>
                 )}
               </div>
 
               {analysis.closing && (
                 <p
-                  className="font-display text-[20px] leading-[1.4] text-primary [overflow-wrap:break-word] [hyphens:auto]"
-                  style={{ marginTop: "32px" }}
+                  className="text-foreground"
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontSize: "18px",
+                    lineHeight: 1.55,
+                    marginTop: "32px",
+                    fontStyle: "italic",
+                  }}
                   aria-live="polite"
                 >
                   {analysis.closing}
@@ -817,58 +875,67 @@ function Index() {
               {analysis.resources.length > 0 && (
                 <section style={{ marginTop: "40px" }}>
                   <h2
-                    className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+                    className="text-[14px] font-medium text-foreground"
                     style={{ fontFamily: "var(--font-sans)" }}
                   >
-                    If You Want to Go Deeper
+                    If you want to read further
                   </h2>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <ul className="mt-3 flex flex-col gap-2">
                     {analysis.resources.map((r) => (
-                      <a
-                        key={r.url}
-                        href={r.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-[13px] text-primary no-underline transition-opacity hover:opacity-80"
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          border: "1px solid #C4784A",
-                          borderRadius: "100px",
-                          padding: "6px 14px",
-                          background: "transparent",
-                        }}
-                      >
-                        <span>{r.label}</span>
-                        <span aria-hidden="true">→</span>
-                      </a>
+                      <li key={r.url}>
+                        <a
+                          href={r.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 text-[15px] no-underline hover:underline"
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            color: "var(--color-primary)",
+                            textUnderlineOffset: "3px",
+                          }}
+                        >
+                          <span>{r.label}</span>
+                          <span aria-hidden="true">→</span>
+                        </a>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </section>
               )}
 
               <div style={{ marginTop: "48px" }}>
-                <div className="h-px w-full" style={{ backgroundColor: "#2A2522" }} />
-                <div className="pt-6 text-center">
-                  <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                <div className="h-px w-full" style={{ backgroundColor: "var(--color-divider)" }} />
+                <div className="pt-5 text-center">
+                  <p
+                    className="text-[13px] leading-[1.6]"
+                    style={{ color: "var(--color-text-faint)" }}
+                  >
                     No account. Nothing saved about you.
                   </p>
-                  <p className="text-[11px] leading-[1.6] text-muted-foreground">
+                  <p
+                    className="text-[13px] leading-[1.6]"
+                    style={{ color: "var(--color-text-faint)" }}
+                  >
                     If you're in immediate danger, call 911 or 1-800-799-7233.
                   </p>
                 </div>
               </div>
 
-              <div
-                className="flex items-center justify-center"
-                style={{ marginTop: "32px" }}
-              >
+              <div className="flex items-center justify-center" style={{ marginTop: "24px" }}>
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground hover:underline"
-                  style={{ fontFamily: "var(--font-sans)" }}
+                  className="text-[14px] hover:text-foreground hover:underline"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    color: "var(--color-muted-foreground)",
+                    textUnderlineOffset: "3px",
+                    background: "transparent",
+                    border: 0,
+                    cursor: "pointer",
+                  }}
                 >
-                  Run another one
+                  Read another one
                 </button>
               </div>
             </article>
@@ -877,12 +944,18 @@ function Index() {
 
         {state !== "output" && state !== "followup" && (
           <footer style={{ marginTop: "48px" }}>
-            <div className="h-px w-full" style={{ backgroundColor: "#2A2522" }} />
-            <div className="pt-6 text-center">
-              <p className="text-[11px] leading-[1.6] text-muted-foreground">
+            <div className="h-px w-full" style={{ backgroundColor: "var(--color-divider)" }} />
+            <div className="pt-5 text-center">
+              <p
+                className="text-[13px] leading-[1.6]"
+                style={{ color: "var(--color-text-faint)" }}
+              >
                 No account. Nothing saved about you.
               </p>
-              <p className="text-[11px] leading-[1.6] text-muted-foreground">
+              <p
+                className="text-[13px] leading-[1.6]"
+                style={{ color: "var(--color-text-faint)" }}
+              >
                 If you're in immediate danger, call 911 or 1-800-799-7233.
               </p>
             </div>
