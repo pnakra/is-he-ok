@@ -520,7 +520,7 @@ function Index() {
                       color: "var(--color-text-faint)",
                     }}
                   >
-                    Not a verdict. Just a clearer read.
+                    A clearer way to make sense of one sentence.
                   </p>
                 </header>
               )}
