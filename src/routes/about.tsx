@@ -3,32 +3,35 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — Is He OK?" },
+      { title: "About — is he ok?" },
       {
         name: "description",
         content:
-          "How Is He OK? works, what it's built on, and how Override Labs handles your privacy.",
+          "A small tool for reading one sentence a little more clearly. What it is, what it isn't, and how to use it.",
       },
-      { property: "og:title", content: "About — Is He OK?" },
+      { property: "og:title", content: "About — is he ok?" },
       {
         property: "og:description",
         content:
-          "How Is He OK? works, what it's built on, and how Override Labs handles your privacy.",
+          "A small tool for reading one sentence a little more clearly. What it is, what it isn't, and how to use it.",
       },
     ],
   }),
   component: AboutPage,
 });
 
-const HAIRLINE = "#2A2522";
-
-function Divider() {
-  return <hr className="my-12 h-px w-full border-0" style={{ backgroundColor: HAIRLINE }} />;
-}
-
 function H2({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-display text-[22px] leading-[1.25] text-foreground sm:text-[26px]">
+    <h2
+      className="text-foreground"
+      style={{
+        fontFamily: "var(--font-sans)",
+        fontSize: "20px",
+        lineHeight: 1.3,
+        fontWeight: 600,
+        letterSpacing: "-0.005em",
+      }}
+    >
       {children}
     </h2>
   );
@@ -37,190 +40,145 @@ function H2({ children }: { children: React.ReactNode }) {
 function P({
   children,
   muted = false,
-  className = "",
 }: {
   children: React.ReactNode;
   muted?: boolean;
-  className?: string;
 }) {
   return (
     <p
-      className={
-        "text-[16px] leading-[1.7] " +
-        (muted ? "text-muted-foreground" : "text-foreground") +
-        " " +
-        className
-      }
-      style={{ fontFamily: "var(--font-sans)" }}
+      style={{
+        fontFamily: "var(--font-sans)",
+        fontSize: "16px",
+        lineHeight: 1.7,
+        color: muted ? "var(--color-muted-foreground)" : "var(--color-foreground)",
+      }}
     >
       {children}
     </p>
   );
 }
 
-function Attribution({ name, children }: { name: string; children: React.ReactNode }) {
+function Divider() {
   return (
-    <p
-      className="mt-5 text-[16px] leading-[1.7] text-muted-foreground"
-      style={{ fontFamily: "var(--font-sans)" }}
-    >
-      <span className="font-medium text-foreground">{name}</span>
-      <span> — </span>
-      {children}
-    </p>
+    <hr
+      className="my-10 h-px w-full border-0"
+      style={{ backgroundColor: "var(--color-divider)" }}
+    />
   );
 }
 
 function AboutPage() {
   return (
     <main className="min-h-screen w-full bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[600px] flex-col px-8 py-10 sm:px-10 sm:py-14">
-        {/* Top nav: back link */}
-        <div className="mb-12">
+      <div className="mx-auto flex min-h-screen w-full max-w-[680px] flex-col px-6 py-8 sm:px-10 sm:py-12">
+        <div className="mb-10 flex items-center justify-between">
           <Link
             to="/"
-            className="text-[13px] text-muted-foreground no-underline hover:underline"
-            style={{ fontFamily: "var(--font-sans)" }}
+            className="text-[14px] text-muted-foreground no-underline hover:text-foreground hover:underline"
+            style={{ fontFamily: "var(--font-sans)", textUnderlineOffset: "3px" }}
           >
-            ← back
+            ← Back
           </Link>
+          <span
+            className="text-[14px]"
+            style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
+          >
+            is he ok?
+          </span>
         </div>
 
-        {/* Title block */}
         <header>
-          <h1 className="font-display text-[34px] leading-[1.15] text-foreground sm:text-[40px]">
-            Is He OK?
-          </h1>
-          <p
-            className="mt-3 text-[14px] text-muted-foreground"
-            style={{ fontFamily: "var(--font-sans)" }}
+          <h1
+            className="text-foreground"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "30px",
+              lineHeight: 1.2,
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+            }}
           >
-            Built by Override Labs.
-          </p>
+            About this tool
+          </h1>
         </header>
 
         <Divider />
 
-        {/* How it works */}
-        <section>
-          <H2>How it works</H2>
-          <div className="mt-5 space-y-5">
-            <P>
-              You type in something he said — a text, a remark, a comment that's been
-              sitting with you. The tool reads it through a set of frameworks developed by
-              researchers and educators who study how language functions as control. It
-              tells you what the sentence was wearing and what it actually did to your
-              ability to think, decide, and trust yourself.
-            </P>
-            <P>
-              It is not a diagnosis. It does not tell you who he is or what you should do.
-              It tells you what one sentence did. That is the whole thing.
-            </P>
-          </div>
+        <section className="space-y-4">
+          <P>This is a small tool for reading one sentence a little more clearly.</P>
+          <P>
+            Sometimes a line sounds small on paper but leaves you unsettled anyway. You
+            paste it in, optionally add a little context, and you get a brief read of what
+            it may have meant and how it may have landed.
+          </P>
+          <P>
+            The goal here is not to deliver a verdict about a person or a relationship. It
+            is to help you slow down and notice tone, framing, and possible patterns.
+          </P>
+          <P>
+            The responses are interpretive, not definitive. They are meant to support
+            reflection — not to replace your own judgment, a conversation with someone you
+            trust, or professional help.
+          </P>
+          <P>
+            If something feels confusing, repeated, or hard to name, this tool can help you
+            look at it with a little more language around it.
+          </P>
+          <P muted>You are still the expert on what happened.</P>
         </section>
 
         <Divider />
 
-        {/* What it's built on */}
-        <section>
-          <H2>What it's built on</H2>
-          <P className="mt-5">This tool synthesizes frameworks from:</P>
-
-          <Attribution name="Lindsay Stoker">
-            <em>The Control Code: Reclaiming Cognitive Sovereignty After Coercive Control</em>{" "}
-            (2026). The four-lens analysis this tool uses — what a sentence is wearing,
-            what it does, who holds authority after it lands, and whether your agency was
-            preserved — is grounded in Stoker's work. We have sought to collaborate with
-            her directly.
-          </Attribution>
-
-          <Attribution name="Lundy Bancroft">
-            <em>Why Does He Do That?</em> (2002). The understanding that control is rooted
-            in entitlement, not pathology, and that intent does not determine impact.
-          </Attribution>
-
-          <Attribution name="Evan Stark">
-            <em>Coercive Control</em> (2007). The framework that maps control as a
-            structural pattern of liberty deprivation rather than a collection of
-            individual incidents.
-          </Attribution>
-
-          <Attribution name="Torna Pitman">
-            educator and advocate whose work on the stages of coercive control informs how
-            this tool calibrates what it's seeing.
-          </Attribution>
-
-          <Attribution name="Jacquelyn Campbell">
-            whose Danger Assessment research established that coercive control is a
-            stronger predictor of intimate partner homicide than prior physical violence.
-          </Attribution>
-
-          <Attribution name="Jane Monckton Smith">
-            whose eight-stage homicide timeline maps coercive control to lethality
-            progression.
-          </Attribution>
-        </section>
-
-        <Divider />
-
-        {/* Privacy */}
-        <section>
+        <section className="space-y-4">
           <H2>Privacy</H2>
-          <div className="mt-5 space-y-5">
-            <P>No account. No name. No email. Nothing that identifies you.</P>
-            <P>
-              When you submit a sentence, it is stored anonymously — with a random ID
-              generated on your device — so Override Labs can learn from what kinds of
-              things people bring here. The sentence and the analysis are stored. Nothing
-              else.
-            </P>
-            <P>
-              If you use private/incognito browsing, the random ID is not retained between
-              sessions. Everything else works the same.
-            </P>
-          </div>
+          <P>No account. No name. No email. Nothing that identifies you.</P>
+          <P>
+            When you submit a sentence, it is stored anonymously — with a random ID
+            generated on your device — so we can learn from what kinds of things people
+            bring here. The sentence and the analysis are stored. Nothing else.
+          </P>
+          <P>
+            If you use private or incognito browsing, the random ID is not kept between
+            sessions. Everything else works the same.
+          </P>
         </section>
 
         <Divider />
 
-        {/* If you're in danger */}
-        <section>
-          <H2>If you're in danger</H2>
-          <div className="mt-5 space-y-5">
-            <P>
-              If you are in immediate physical danger, call{" "}
-              <span className="text-foreground">911</span>.
-            </P>
-            <P muted>
-              <span className="font-medium text-foreground">
-                National Domestic Violence Hotline: 1-800-799-7233
-              </span>{" "}
-              |{" "}
-              <a
-                href="https://www.thehotline.org"
-                target="_blank"
-                rel="noreferrer"
-                className="text-foreground underline-offset-2 hover:underline"
-              >
-                thehotline.org
-              </a>
-              <br />
-              Available 24/7. Chat available on their website if you can't speak freely.
-            </P>
-          </div>
+        <section className="space-y-4">
+          <H2>If you feel unsafe</H2>
+          <P>
+            If you feel unsafe or need urgent support, please contact a trusted person or a
+            qualified local resource.
+          </P>
+          <P>
+            In the U.S., the National Domestic Violence Hotline is available 24/7 at{" "}
+            <span className="text-foreground">1-800-799-7233</span>, or chat at{" "}
+            <a
+              href="https://www.thehotline.org"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:underline"
+              style={{ color: "var(--color-primary)", textUnderlineOffset: "3px" }}
+            >
+              thehotline.org
+            </a>
+            . If you are in immediate physical danger, call{" "}
+            <span className="text-foreground">911</span>.
+          </P>
         </section>
 
         <Divider />
 
-        {/* Footer note */}
-        <section className="pb-12">
+        <section className="pb-12 space-y-4">
+          <H2>Who made this</H2>
           <P muted>
-            Override Labs builds prevention technology. isheok.app is one of several tools
-            in development. If you're a researcher, clinician, educator, or advocate who
-            wants to talk about this work:{" "}
+            Built by Override Labs. If you're a researcher, clinician, educator, or
+            advocate who wants to talk about this work:{" "}
             <a
               href="mailto:overridelabspreventiontech@gmail.com"
-              className="text-foreground underline-offset-2 hover:underline"
+              className="hover:underline"
+              style={{ color: "var(--color-primary)", textUnderlineOffset: "3px" }}
             >
               overridelabspreventiontech@gmail.com
             </a>
