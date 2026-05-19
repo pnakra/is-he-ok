@@ -540,7 +540,7 @@ function Index() {
                 disabled={isBusy}
                 maxLength={SAID_MAX}
                 aria-label="The sentence you want to look at"
-                placeholder="e.g. “you always do this”"
+                placeholder="e.g. “you’re too sensitive”"
                 rows={3}
                 className="quiet-input block w-full px-4 py-3 text-[17px] text-foreground min-h-[120px]"
                 style={{
