@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
-import { COLORS, SANS } from "./theme";
+import { COLORS, SANS } from "../theme";
 
 // Shared "browser chrome" wrapper so the product scenes feel like a screen recording.
 export const BrowserFrame: React.FC<{ children: React.ReactNode }> = ({
