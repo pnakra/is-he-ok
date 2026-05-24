@@ -43,3 +43,27 @@ export async function logFeedback(input: FeedbackInput): Promise<void> {
     // Intentionally swallowed.
   }
 }
+
+/**
+ * Record that a user clicked a suggested resource link. Stored in the same
+ * iho_feedback table so we can join click-throughs back to a session.
+ */
+export async function logResourceClick(input: {
+  sessionId: string;
+  url: string;
+  label: string;
+}): Promise<void> {
+  try {
+    const { sessionId, url, label } = input;
+    if (!sessionId) return;
+    const note = `${label} — ${url}`.slice(0, 1000);
+    await supabase.from("iho_feedback").insert({
+      session_id: sessionId,
+      component: "resource_click",
+      rating: "click",
+      note,
+    });
+  } catch {
+    // Intentionally swallowed.
+  }
+}
