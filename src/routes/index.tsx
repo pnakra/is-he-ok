@@ -838,10 +838,31 @@ function Index() {
               <div className="flex flex-col gap-3">
                 <Card label="How it came across" defaultOpen>
                   {analysis.wearing}
+                  <FeedbackChips
+                    sessionId={getSessionId()}
+                    component="read"
+                    slot="wearing"
+                  />
                 </Card>
-                {analysis.did && <Card label="What it did to you">{analysis.did}</Card>}
+                {analysis.did && (
+                  <Card label="What it did to you">
+                    {analysis.did}
+                    <FeedbackChips
+                      sessionId={getSessionId()}
+                      component="read"
+                      slot="did"
+                    />
+                  </Card>
+                )}
                 {analysis.tactic && (
-                  <Card label="What may be going on">{analysis.tactic}</Card>
+                  <Card label="What may be going on">
+                    {analysis.tactic}
+                    <FeedbackChips
+                      sessionId={getSessionId()}
+                      component="read"
+                      slot="tactic"
+                    />
+                  </Card>
                 )}
               </div>
 
