@@ -903,6 +903,13 @@ function Index() {
                           href={r.url}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={() =>
+                            void logResourceClick({
+                              sessionId: getSessionId(),
+                              url: r.url,
+                              label: r.label,
+                            })
+                          }
                           className="inline-flex items-center gap-2 text-[15px] no-underline hover:underline"
                           style={{
                             fontFamily: "var(--font-sans)",
@@ -916,13 +923,6 @@ function Index() {
                       </li>
                     ))}
                   </ul>
-                  <div style={{ marginTop: "14px" }}>
-                    <FeedbackChips
-                      sessionId={getSessionId()}
-                      component="resource"
-                      prompt="Was this link useful?"
-                    />
-                  </div>
                 </section>
               )}
 
