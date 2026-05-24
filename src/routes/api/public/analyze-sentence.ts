@@ -873,7 +873,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           return buildResponse(FAILURE_PAYLOAD, false);
         }
 
-        // STEP 1 — safety pre-filter
+        // STEP 1a — physical-danger safety pre-filter
         if (isSafetyFlagged(input.sentence, input.context)) {
           await logSubmission({
             sessionId: input.sessionId,
@@ -888,11 +888,27 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           return buildResponse(SAFETY_RESPONSE, true);
         }
 
+        // STEP 1b — sex-coercion pre-filter (routes to RAINN)
+        if (isSexCoercionFlagged(input.sentence, input.context)) {
+          await logSubmission({
+            sessionId: input.sessionId,
+            sentence: input.sentence,
+            context: input.context,
+            analysis: JSON.stringify(SEX_COERCION_RESPONSE),
+            safetyFlagged: true,
+            followups: input.followups,
+            triageStatus: input.triageStatus ?? "SAFETY",
+            prolificId: input.prolificId,
+          });
+          return buildResponse(SEX_COERCION_RESPONSE, true);
+        }
+
         // STEP 2 — Anthropic
-        const analysis = await callAnthropic(input.sentence, input.context, input.followups);
-        if (!analysis) {
+        const rawAnalysis = await callAnthropic(input.sentence, input.context, input.followups);
+        if (!rawAnalysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
         }
+        const analysis = alignResourcesToTactic(rawAnalysis);
 
         // STEP 3 — log + return
         await logSubmission({
