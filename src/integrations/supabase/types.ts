@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      iho_feedback: {
+        Row: {
+          component: string
+          created_at: string
+          id: string
+          note: string | null
+          rating: string
+          session_id: string
+          submission_id: string | null
+        }
+        Insert: {
+          component: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          rating: string
+          session_id: string
+          submission_id?: string | null
+        }
+        Update: {
+          component?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          rating?: string
+          session_id?: string
+          submission_id?: string | null
+        }
+        Relationships: []
+      }
       iho_submissions: {
         Row: {
           analysis: string | null

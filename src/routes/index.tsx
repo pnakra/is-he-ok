@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { FeedbackChips } from "@/components/FeedbackChips";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -837,10 +838,31 @@ function Index() {
               <div className="flex flex-col gap-3">
                 <Card label="How it came across" defaultOpen>
                   {analysis.wearing}
+                  <FeedbackChips
+                    sessionId={getSessionId()}
+                    component="read"
+                    slot="wearing"
+                  />
                 </Card>
-                {analysis.did && <Card label="What it did to you">{analysis.did}</Card>}
+                {analysis.did && (
+                  <Card label="What it did to you">
+                    {analysis.did}
+                    <FeedbackChips
+                      sessionId={getSessionId()}
+                      component="read"
+                      slot="did"
+                    />
+                  </Card>
+                )}
                 {analysis.tactic && (
-                  <Card label="What may be going on">{analysis.tactic}</Card>
+                  <Card label="What may be going on">
+                    {analysis.tactic}
+                    <FeedbackChips
+                      sessionId={getSessionId()}
+                      component="read"
+                      slot="tactic"
+                    />
+                  </Card>
                 )}
               </div>
 
@@ -888,8 +910,17 @@ function Index() {
                       </li>
                     ))}
                   </ul>
+                  <div style={{ marginTop: "14px" }}>
+                    <FeedbackChips
+                      sessionId={getSessionId()}
+                      component="resource"
+                      prompt="Was this link useful?"
+                    />
+                  </div>
                 </section>
               )}
+
+              <OverallFeedback sessionId={getSessionId()} />
 
               <div style={{ marginTop: "48px" }}>
                 <div className="h-px w-full" style={{ backgroundColor: "var(--color-divider)" }} />
@@ -951,5 +982,34 @@ function Index() {
         )}
       </div>
     </main>
+  );
+}
+
+function OverallFeedback({ sessionId }: { sessionId: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 1800);
+    return () => clearTimeout(t);
+  }, []);
+  if (!show) return null;
+  return (
+    <div
+      className="animate-rise-in"
+      style={{
+        marginTop: "40px",
+        padding: "16px 18px",
+        borderRadius: "10px",
+        background: "var(--color-surface-2)",
+        border: "1px solid var(--color-divider)",
+      }}
+    >
+      <FeedbackChips
+        sessionId={sessionId}
+        component="overall"
+        prompt="Was this worth your time?"
+        emphasis="soft"
+        allowNote
+      />
+    </div>
   );
 }
