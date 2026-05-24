@@ -131,7 +131,8 @@ export function FeedbackChips({
       </div>
 
       {showNoteField && (
-        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "6px", alignItems: "center", width: "100%" }}>
+
           <input
             type="text"
             value={note}
