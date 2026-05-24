@@ -404,6 +404,73 @@ function isSafetyFlagged(sentence: string, context: string | null): boolean {
   return SAFETY_KEYWORDS.some((kw) => haystack.includes(kw));
 }
 
+function isSexCoercionFlagged(sentence: string, context: string | null): boolean {
+  const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
+  if (SEX_COERCION_PHRASES.some((p) => haystack.includes(p))) return true;
+  const hasSex = SEX_TERMS.some((t) => haystack.includes(t));
+  if (!hasSex) return false;
+  return COERCION_PATTERNS.some((p) => haystack.includes(p));
+}
+
+// Map a model-named tactic onto the canonical resource pair from the
+// RESOURCE BANK above. Keeps links honest to the read instead of whatever
+// the model happened to grab.
+const TACTIC_RESOURCES: Record<string, AnalysisResource[]> = {
+  "manufactured insecurity": [
+    { label: "One Love — signs of an unhealthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
+    { label: "Is it love or control? — loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "withdrawal as punishment": [
+    { label: "The silent treatment — Psychology Today", url: "https://www.psychologytoday.com/us/blog/invisible-bruises/202101/the-silent-treatment-is-emotional-abuse" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "testing tolerance": [
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+    { label: "One Love Foundation", url: "https://www.joinonelove.org" },
+  ],
+  "embedded criticism": [
+    { label: "One Love — 10 signs of an unhealthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "alternating warmth and coldness": [
+    { label: "One Love — healthy vs unhealthy", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "frame control": [
+    { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "information management": [
+    { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "debt mechanism": [
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
+  ],
+  "identity erosion": [
+    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "clean result": [
+    { label: "One Love — signs of a healthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-a-healthy-relationship" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+};
+
+function alignResourcesToTactic(payload: AnalysisPayload): AnalysisPayload {
+  if (!payload.tactic) return payload;
+  // The tactic field is "<label> — explanation". Grab the label half.
+  const head = payload.tactic.split(/[—:\-]/)[0]?.trim().toLowerCase() ?? "";
+  if (!head) return payload;
+  for (const [key, resources] of Object.entries(TACTIC_RESOURCES)) {
+    if (head.includes(key)) {
+      return { ...payload, resources };
+    }
+  }
+  return payload;
+}
+
 async function notifySlack(input: {
   sessionId: string;
   sentence: string;
