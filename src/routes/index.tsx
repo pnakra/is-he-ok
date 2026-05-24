@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { FeedbackChips } from "@/components/FeedbackChips";
+import { logResourceClick } from "@/lib/feedback";
 
 export const Route = createFileRoute("/")({
   component: Index,
