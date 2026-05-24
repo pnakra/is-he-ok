@@ -910,8 +910,17 @@ function Index() {
                       </li>
                     ))}
                   </ul>
+                  <div style={{ marginTop: "14px" }}>
+                    <FeedbackChips
+                      sessionId={getSessionId()}
+                      component="resource"
+                      prompt="Was this link useful?"
+                    />
+                  </div>
                 </section>
               )}
+
+              <OverallFeedback sessionId={getSessionId()} />
 
               <div style={{ marginTop: "48px" }}>
                 <div className="h-px w-full" style={{ backgroundColor: "var(--color-divider)" }} />
