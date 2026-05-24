@@ -29,6 +29,66 @@ const SAFETY_KEYWORDS = [
   "hurt me",
 ];
 
+// Sex-coercion detection. We flag when a sex term co-occurs with a
+// coercion / refusal / incapacity pattern, OR when a specific phrase appears.
+// Conservative on purpose — false positives route to RAINN, which is the
+// right place even when the situation turns out to be merely confusing.
+const SEX_TERMS = [
+  "sex",
+  "sexual",
+  "blowjob",
+  "blow job",
+  "oral",
+  "intercourse",
+  "fuck me",
+  "finger me",
+  "go down on",
+  "hook up",
+  "hooked up",
+  "sleep with",
+  "slept with",
+];
+
+const COERCION_PATTERNS = [
+  "couldn't say no",
+  "couldnt say no",
+  "couldn't not",
+  "couldnt not",
+  "had to",
+  "made me",
+  "forced me",
+  "wouldn't stop",
+  "wouldnt stop",
+  "didn't stop",
+  "didnt stop",
+  "kept going",
+  "after i said no",
+  "even though i said no",
+  "wouldn't take no",
+  "wouldnt take no",
+  "owed him",
+  "owe him",
+  "guilted me into",
+  "pressured me",
+  "talked me into",
+  "passed out",
+  "blacked out",
+  "too drunk",
+  "asleep",
+];
+
+const SEX_COERCION_PHRASES = [
+  "raped",
+  "rape me",
+  "raping",
+  "assaulted me",
+  "sexually assaulted",
+  "non-consensual",
+  "nonconsensual",
+  "without my consent",
+  "without consent",
+];
+
 const SAFETY_RESPONSE: AnalysisPayload = {
   wearing:
     "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
@@ -43,6 +103,24 @@ const SAFETY_RESPONSE: AnalysisPayload = {
     {
       label: "r/abusiverelationships",
       url: "https://reddit.com/r/abusiverelationships",
+    },
+  ],
+};
+
+const SEX_COERCION_RESPONSE: AnalysisPayload = {
+  wearing:
+    "What you're describing sounds like it crossed into sexual coercion — being pushed, guilted, or told you couldn't say no. That isn't something this tool should try to read for you in a card.",
+  did: "There are people trained for exactly this, and talking to them doesn't commit you to anything. RAINN's hotline is free, confidential, and available 24/7.",
+  tactic: null,
+  closing: "What you felt about it counts. You're allowed to call it what it was.",
+  resources: [
+    {
+      label: "RAINN — 24/7 hotline & chat",
+      url: "https://www.rainn.org",
+    },
+    {
+      label: "loveisrespect.org",
+      url: "https://www.loveisrespect.org",
     },
   ],
 };
