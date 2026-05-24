@@ -27,6 +27,62 @@ const SAFETY_KEYWORDS = [
   "going to hurt",
 ];
 
+const SEX_TERMS = [
+  "sex",
+  "sexual",
+  "blowjob",
+  "blow job",
+  "oral",
+  "intercourse",
+  "fuck me",
+  "finger me",
+  "go down on",
+  "hook up",
+  "hooked up",
+  "sleep with",
+  "slept with",
+];
+
+const COERCION_PATTERNS = [
+  "couldn't say no",
+  "couldnt say no",
+  "couldn't not",
+  "couldnt not",
+  "had to",
+  "made me",
+  "forced me",
+  "wouldn't stop",
+  "wouldnt stop",
+  "didn't stop",
+  "didnt stop",
+  "kept going",
+  "after i said no",
+  "even though i said no",
+  "wouldn't take no",
+  "wouldnt take no",
+  "owed him",
+  "owe him",
+  "guilted me into",
+  "pressured me",
+  "talked me into",
+  "passed out",
+  "blacked out",
+  "too drunk",
+  "asleep",
+];
+
+const SEX_COERCION_PHRASES = [
+  "raped",
+  "rape me",
+  "raping",
+  "assaulted me",
+  "sexually assaulted",
+  "non-consensual",
+  "nonconsensual",
+  "without my consent",
+  "without consent",
+];
+
 const SYSTEM_PROMPT = `You are a classifier for "Is He OK?", a tool that helps girls and young women make sense of one sentence that felt off in a relationship or dating context.
 
 Your only job is to decide whether the user's input is too ambiguous or underspecified to analyze responsibly without asking 2–3 very short follow-up questions first.
