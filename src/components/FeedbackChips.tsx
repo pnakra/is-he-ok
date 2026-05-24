@@ -32,6 +32,7 @@ export function FeedbackChips({
   prompt = "Did this land?",
   allowNote = false,
   emphasis = "subtle",
+  align = "left",
 }: FeedbackChipsProps) {
   const [picked, setPicked] = useState<FeedbackRating | null>(null);
   const [note, setNote] = useState("");
