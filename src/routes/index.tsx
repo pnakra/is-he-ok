@@ -468,12 +468,17 @@ function Index() {
       <div className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col px-6 py-8 sm:px-10 sm:py-10">
         {/* Brand */}
         <div className="flex items-center justify-between">
-          <span
-            className="text-[15px] font-medium text-foreground"
+          <Link
+            to="/"
+            onClick={() => {
+              // If we're already on home in output state, reset.
+              if (state === "output" || state === "followup") handleReset();
+            }}
+            className="text-[15px] font-medium text-foreground no-underline hover:opacity-80"
             style={{ fontFamily: "var(--font-sans)" }}
           >
             is he ok?
-          </span>
+          </Link>
           <Link
             to="/about"
             className="text-[14px] text-muted-foreground no-underline hover:text-foreground hover:underline"
