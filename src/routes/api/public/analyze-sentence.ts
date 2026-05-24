@@ -29,6 +29,66 @@ const SAFETY_KEYWORDS = [
   "hurt me",
 ];
 
+// Sex-coercion detection. We flag when a sex term co-occurs with a
+// coercion / refusal / incapacity pattern, OR when a specific phrase appears.
+// Conservative on purpose — false positives route to RAINN, which is the
+// right place even when the situation turns out to be merely confusing.
+const SEX_TERMS = [
+  "sex",
+  "sexual",
+  "blowjob",
+  "blow job",
+  "oral",
+  "intercourse",
+  "fuck me",
+  "finger me",
+  "go down on",
+  "hook up",
+  "hooked up",
+  "sleep with",
+  "slept with",
+];
+
+const COERCION_PATTERNS = [
+  "couldn't say no",
+  "couldnt say no",
+  "couldn't not",
+  "couldnt not",
+  "had to",
+  "made me",
+  "forced me",
+  "wouldn't stop",
+  "wouldnt stop",
+  "didn't stop",
+  "didnt stop",
+  "kept going",
+  "after i said no",
+  "even though i said no",
+  "wouldn't take no",
+  "wouldnt take no",
+  "owed him",
+  "owe him",
+  "guilted me into",
+  "pressured me",
+  "talked me into",
+  "passed out",
+  "blacked out",
+  "too drunk",
+  "asleep",
+];
+
+const SEX_COERCION_PHRASES = [
+  "raped",
+  "rape me",
+  "raping",
+  "assaulted me",
+  "sexually assaulted",
+  "non-consensual",
+  "nonconsensual",
+  "without my consent",
+  "without consent",
+];
+
 const SAFETY_RESPONSE: AnalysisPayload = {
   wearing:
     "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
@@ -43,6 +103,24 @@ const SAFETY_RESPONSE: AnalysisPayload = {
     {
       label: "r/abusiverelationships",
       url: "https://reddit.com/r/abusiverelationships",
+    },
+  ],
+};
+
+const SEX_COERCION_RESPONSE: AnalysisPayload = {
+  wearing:
+    "What you're describing sounds like it crossed into sexual coercion — being pushed, guilted, or told you couldn't say no. That isn't something this tool should try to read for you in a card.",
+  did: "There are people trained for exactly this, and talking to them doesn't commit you to anything. RAINN's hotline is free, confidential, and available 24/7.",
+  tactic: null,
+  closing: "What you felt about it counts. You're allowed to call it what it was.",
+  resources: [
+    {
+      label: "RAINN — 24/7 hotline & chat",
+      url: "https://www.rainn.org",
+    },
+    {
+      label: "loveisrespect.org",
+      url: "https://www.loveisrespect.org",
     },
   ],
 };
@@ -324,6 +402,73 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
 function isSafetyFlagged(sentence: string, context: string | null): boolean {
   const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
   return SAFETY_KEYWORDS.some((kw) => haystack.includes(kw));
+}
+
+function isSexCoercionFlagged(sentence: string, context: string | null): boolean {
+  const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
+  if (SEX_COERCION_PHRASES.some((p) => haystack.includes(p))) return true;
+  const hasSex = SEX_TERMS.some((t) => haystack.includes(t));
+  if (!hasSex) return false;
+  return COERCION_PATTERNS.some((p) => haystack.includes(p));
+}
+
+// Map a model-named tactic onto the canonical resource pair from the
+// RESOURCE BANK above. Keeps links honest to the read instead of whatever
+// the model happened to grab.
+const TACTIC_RESOURCES: Record<string, AnalysisResource[]> = {
+  "manufactured insecurity": [
+    { label: "One Love — signs of an unhealthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
+    { label: "Is it love or control? — loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "withdrawal as punishment": [
+    { label: "The silent treatment — Psychology Today", url: "https://www.psychologytoday.com/us/blog/invisible-bruises/202101/the-silent-treatment-is-emotional-abuse" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "testing tolerance": [
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+    { label: "One Love Foundation", url: "https://www.joinonelove.org" },
+  ],
+  "embedded criticism": [
+    { label: "One Love — 10 signs of an unhealthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "alternating warmth and coldness": [
+    { label: "One Love — healthy vs unhealthy", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "frame control": [
+    { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "information management": [
+    { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "debt mechanism": [
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
+  ],
+  "identity erosion": [
+    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+  "clean result": [
+    { label: "One Love — signs of a healthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-a-healthy-relationship" },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+  ],
+};
+
+function alignResourcesToTactic(payload: AnalysisPayload): AnalysisPayload {
+  if (!payload.tactic) return payload;
+  // The tactic field is "<label> — explanation". Grab the label half.
+  const head = payload.tactic.split(/[—:\-]/)[0]?.trim().toLowerCase() ?? "";
+  if (!head) return payload;
+  for (const [key, resources] of Object.entries(TACTIC_RESOURCES)) {
+    if (head.includes(key)) {
+      return { ...payload, resources };
+    }
+  }
+  return payload;
 }
 
 async function notifySlack(input: {
@@ -728,7 +873,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           return buildResponse(FAILURE_PAYLOAD, false);
         }
 
-        // STEP 1 — safety pre-filter
+        // STEP 1a — physical-danger safety pre-filter
         if (isSafetyFlagged(input.sentence, input.context)) {
           await logSubmission({
             sessionId: input.sessionId,
@@ -743,11 +888,27 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           return buildResponse(SAFETY_RESPONSE, true);
         }
 
+        // STEP 1b — sex-coercion pre-filter (routes to RAINN)
+        if (isSexCoercionFlagged(input.sentence, input.context)) {
+          await logSubmission({
+            sessionId: input.sessionId,
+            sentence: input.sentence,
+            context: input.context,
+            analysis: JSON.stringify(SEX_COERCION_RESPONSE),
+            safetyFlagged: true,
+            followups: input.followups,
+            triageStatus: input.triageStatus ?? "SAFETY",
+            prolificId: input.prolificId,
+          });
+          return buildResponse(SEX_COERCION_RESPONSE, true);
+        }
+
         // STEP 2 — Anthropic
-        const analysis = await callAnthropic(input.sentence, input.context, input.followups);
-        if (!analysis) {
+        const rawAnalysis = await callAnthropic(input.sentence, input.context, input.followups);
+        if (!rawAnalysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
         }
+        const analysis = alignResourcesToTactic(rawAnalysis);
 
         // STEP 3 — log + return
         await logSubmission({
