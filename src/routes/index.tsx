@@ -1003,10 +1003,11 @@ function OverallFeedback({ sessionId }: { sessionId: string }) {
       className="animate-rise-in"
       style={{
         marginTop: "40px",
-        padding: "16px 18px",
+        padding: "18px 18px",
         borderRadius: "10px",
         background: "var(--color-surface-2)",
         border: "1px solid var(--color-divider)",
+        textAlign: "center",
       }}
     >
       <FeedbackChips
@@ -1014,6 +1015,7 @@ function OverallFeedback({ sessionId }: { sessionId: string }) {
         component="overall"
         prompt="Was this worth your time?"
         emphasis="soft"
+        align="center"
         allowNote
       />
     </div>
