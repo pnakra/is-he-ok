@@ -79,12 +79,13 @@ function AboutPage() {
           >
             ← Back
           </Link>
-          <span
-            className="text-[14px]"
+          <Link
+            to="/"
+            className="text-[14px] no-underline hover:opacity-80"
             style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
           >
             is he ok?
-          </span>
+          </Link>
         </div>
 
         <header>

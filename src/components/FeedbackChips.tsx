@@ -15,12 +15,14 @@ interface FeedbackChipsProps {
   allowNote?: boolean;
   /** Larger style for the end-of-flow overall prompt. */
   emphasis?: "subtle" | "soft";
+  /** Layout alignment for the row. */
+  align?: "left" | "center";
 }
 
 const OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
   { rating: "helpful", label: "Yes" },
   { rating: "not_quite", label: "Not quite" },
-  { rating: "confusing", label: "Confusing" },
+  { rating: "confusing", label: "Something else" },
 ];
 
 export function FeedbackChips({
@@ -30,6 +32,7 @@ export function FeedbackChips({
   prompt = "Did this land?",
   allowNote = false,
   emphasis = "subtle",
+  align = "left",
 }: FeedbackChipsProps) {
   const [picked, setPicked] = useState<FeedbackRating | null>(null);
   const [note, setNote] = useState("");
@@ -66,16 +69,18 @@ export function FeedbackChips({
   return (
     <div
       style={{
-        marginTop: emphasis === "soft" ? "10px" : "10px",
+        marginTop: emphasis === "soft" ? "0" : "10px",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
+        alignItems: align === "center" ? "center" : "stretch",
       }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "center",
+          justifyContent: align === "center" ? "center" : "flex-start",
           gap: "10px",
           flexWrap: "wrap",
         }}
@@ -126,7 +131,8 @@ export function FeedbackChips({
       </div>
 
       {showNoteField && (
-        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "6px", alignItems: "center", width: "100%" }}>
+
           <input
             type="text"
             value={note}

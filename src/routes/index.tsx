@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { FeedbackChips } from "@/components/FeedbackChips";
+import { logResourceClick } from "@/lib/feedback";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -467,12 +468,17 @@ function Index() {
       <div className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col px-6 py-8 sm:px-10 sm:py-10">
         {/* Brand */}
         <div className="flex items-center justify-between">
-          <span
-            className="text-[15px] font-medium text-foreground"
+          <Link
+            to="/"
+            onClick={() => {
+              // If we're already on home in output state, reset.
+              if (state === "output" || state === "followup") handleReset();
+            }}
+            className="text-[15px] font-medium text-foreground no-underline hover:opacity-80"
             style={{ fontFamily: "var(--font-sans)" }}
           >
             is he ok?
-          </span>
+          </Link>
           <Link
             to="/about"
             className="text-[14px] text-muted-foreground no-underline hover:text-foreground hover:underline"
@@ -562,7 +568,7 @@ function Index() {
                 </p>
               )}
 
-              {state === "empty" && (
+              {state === "empty" && said.trim().length === 0 && (
                 <div className="mt-5">
                   <p
                     className="mb-2 text-[14px]"
@@ -897,6 +903,13 @@ function Index() {
                           href={r.url}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={() =>
+                            void logResourceClick({
+                              sessionId: getSessionId(),
+                              url: r.url,
+                              label: r.label,
+                            })
+                          }
                           className="inline-flex items-center gap-2 text-[15px] no-underline hover:underline"
                           style={{
                             fontFamily: "var(--font-sans)",
@@ -910,13 +923,6 @@ function Index() {
                       </li>
                     ))}
                   </ul>
-                  <div style={{ marginTop: "14px" }}>
-                    <FeedbackChips
-                      sessionId={getSessionId()}
-                      component="resource"
-                      prompt="Was this link useful?"
-                    />
-                  </div>
                 </section>
               )}
 
@@ -997,10 +1003,11 @@ function OverallFeedback({ sessionId }: { sessionId: string }) {
       className="animate-rise-in"
       style={{
         marginTop: "40px",
-        padding: "16px 18px",
+        padding: "18px 18px",
         borderRadius: "10px",
         background: "var(--color-surface-2)",
         border: "1px solid var(--color-divider)",
+        textAlign: "center",
       }}
     >
       <FeedbackChips
@@ -1008,6 +1015,7 @@ function OverallFeedback({ sessionId }: { sessionId: string }) {
         component="overall"
         prompt="Was this worth your time?"
         emphasis="soft"
+        align="center"
         allowNote
       />
     </div>
