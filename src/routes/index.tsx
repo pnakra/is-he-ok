@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { FeedbackChips } from "@/components/FeedbackChips";
 
 export const Route = createFileRoute("/")({
   component: Index,
