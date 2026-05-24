@@ -15,12 +15,14 @@ interface FeedbackChipsProps {
   allowNote?: boolean;
   /** Larger style for the end-of-flow overall prompt. */
   emphasis?: "subtle" | "soft";
+  /** Layout alignment for the row. */
+  align?: "left" | "center";
 }
 
 const OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
   { rating: "helpful", label: "Yes" },
   { rating: "not_quite", label: "Not quite" },
-  { rating: "confusing", label: "Confusing" },
+  { rating: "confusing", label: "Something else" },
 ];
 
 export function FeedbackChips({
