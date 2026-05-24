@@ -984,3 +984,32 @@ function Index() {
     </main>
   );
 }
+
+function OverallFeedback({ sessionId }: { sessionId: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 1800);
+    return () => clearTimeout(t);
+  }, []);
+  if (!show) return null;
+  return (
+    <div
+      className="animate-rise-in"
+      style={{
+        marginTop: "40px",
+        padding: "16px 18px",
+        borderRadius: "10px",
+        background: "var(--color-surface-2)",
+        border: "1px solid var(--color-divider)",
+      }}
+    >
+      <FeedbackChips
+        sessionId={sessionId}
+        component="overall"
+        prompt="Was this worth your time?"
+        emphasis="soft"
+        allowNote
+      />
+    </div>
+  );
+}
