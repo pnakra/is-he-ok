@@ -19,7 +19,13 @@ interface FeedbackChipsProps {
   align?: "left" | "center";
 }
 
-const OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
+const PER_CARD_OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
+  { rating: "helpful", label: "Yes" },
+  { rating: "not_quite", label: "Not quite" },
+  { rating: "confusing", label: "Confusing" },
+];
+
+const OVERALL_OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
   { rating: "helpful", label: "Yes" },
   { rating: "not_quite", label: "Not quite" },
   { rating: "confusing", label: "Something else" },
@@ -34,6 +40,7 @@ export function FeedbackChips({
   emphasis = "subtle",
   align = "left",
 }: FeedbackChipsProps) {
+  const OPTIONS = component === "overall" ? OVERALL_OPTIONS : PER_CARD_OPTIONS;
   const [picked, setPicked] = useState<FeedbackRating | null>(null);
   const [note, setNote] = useState("");
   const [noteSent, setNoteSent] = useState(false);
