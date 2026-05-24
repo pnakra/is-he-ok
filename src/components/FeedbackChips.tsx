@@ -69,16 +69,18 @@ export function FeedbackChips({
   return (
     <div
       style={{
-        marginTop: emphasis === "soft" ? "10px" : "10px",
+        marginTop: emphasis === "soft" ? "0" : "10px",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
+        alignItems: align === "center" ? "center" : "stretch",
       }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "center",
+          justifyContent: align === "center" ? "center" : "flex-start",
           gap: "10px",
           flexWrap: "wrap",
         }}
