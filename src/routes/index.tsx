@@ -568,7 +568,7 @@ function Index() {
                 </p>
               )}
 
-              {state === "empty" && (
+              {state === "empty" && said.trim().length === 0 && (
                 <div className="mt-5">
                   <p
                     className="mb-2 text-[14px]"
