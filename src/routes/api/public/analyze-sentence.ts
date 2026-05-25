@@ -421,63 +421,175 @@ function isSexCoercionFlagged(sentence: string, context: string | null): boolean
   return COERCION_PATTERNS.some((p) => haystack.includes(p));
 }
 
-// Map a model-named tactic onto the canonical resource pair from the
-// RESOURCE BANK above. Keeps links honest to the read instead of whatever
-// the model happened to grab.
+// ---------------------------------------------------------------------------
+// Verified resource bank. Every URL here was probed (200 or browser-200) on
+// 2026-05-25. Re-check before publishing if it's been more than a few months.
+// Keep entries short — labels render inline on mobile.
+// ---------------------------------------------------------------------------
+const R = {
+  // The Hotline (NDVH)
+  hotline: { label: "The hotline — chat 24/7", url: "https://www.thehotline.org" },
+  hotlineGaslighting: { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting/" },
+  hotlineFinancial: { label: "Financial abuse — The hotline", url: "https://www.thehotline.org/resources/financialabuse/" },
+  hotlineCoercedDebt: { label: "Coerced debt — The hotline", url: "https://www.thehotline.org/resources/how-to-recognize-coerced-debt/" },
+  hotlineTypes: { label: "Types of abuse — The hotline", url: "https://www.thehotline.org/resources/types-of-abuse/" },
+  hotlineHealthy: { label: "What healthy looks like — The hotline", url: "https://www.thehotline.org/resources/healthy-relationships/" },
+  hotlinePowerControl: { label: "Power & control — The hotline", url: "https://www.thehotline.org/identify-abuse/power-and-control/" },
+  hotlineSafetyPlan: { label: "Plan for safety — The hotline", url: "https://www.thehotline.org/plan-for-safety/" },
+  hotlineBrokeSilence: { label: "When I broke the silence — The hotline", url: "https://www.thehotline.org/resources/when-i-broke-the-silence/" },
+  hotlineLeaving: { label: "Leaving an abusive relationship — The hotline", url: "https://www.thehotline.org/resources/leaving-an-abusive-relationship/" },
+  hotlineUnderstand: { label: "Understanding relationship abuse — The hotline", url: "https://www.thehotline.org/identify-abuse/understand-relationship-abuse/" },
+
+  // loveisrespect
+  lirTypes: { label: "Types of abuse — loveisrespect", url: "https://www.loveisrespect.org/resources/types-of-abuse/" },
+  lirSpectrum: { label: "Relationship spectrum — loveisrespect", url: "https://www.loveisrespect.org/relationship-spectrum/" },
+  lirQuiz: { label: "Is your relationship healthy? — loveisrespect quiz", url: "https://www.loveisrespect.org/quiz/is-your-relationship-healthy/" },
+  lirBasics: { label: "Dating basics — loveisrespect", url: "https://www.loveisrespect.org/dating-basics-for-healthy-relationships/" },
+  lirCoercion: { label: "What is sexual coercion? — loveisrespect", url: "https://www.loveisrespect.org/resources/what-is-sexual-coercion/" },
+
+  // WomensLaw
+  wlSafetyPlan: { label: "Safety planning — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/safety-planning" },
+  wlForms: { label: "Forms of abuse — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/forms-abuse" },
+  wlEmotional: { label: "Emotional & psychological abuse — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/forms-abuse/emotional-and-psychological-abuse" },
+  wlFinancial: { label: "Financial abuse — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/forms-abuse/financial-abuse" },
+  wlSexual: { label: "Sexual abuse & exploitation — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/forms-abuse/sexual-abuse-and-exploitation" },
+
+  // RAINN (curl 403s; live in browser)
+  rainn: { label: "RAINN — 24/7 hotline & chat", url: "https://www.rainn.org" },
+  rainnCoercion: { label: "Sexual coercion — RAINN", url: "https://www.rainn.org/articles/sexual-coercion" },
+  rainnTypes: { label: "Types of sexual violence — RAINN", url: "https://www.rainn.org/articles/types-of-sexual-violence" },
+
+  // One Love
+  oneLoveUnhealthy: { label: "10 signs of an unhealthy relationship — One Love", url: "https://www.joinonelove.org/signs-unhealthy-relationship/" },
+  oneLoveHealthy: { label: "10 signs of a healthy relationship — One Love", url: "https://www.joinonelove.org/signs-healthy-relationship/" },
+  oneLoveEmotional: { label: "Emotional abuse — One Love", url: "https://www.joinonelove.org/learn/emotional_abuse/" },
+  oneLoveVerbal: { label: "11 patterns of verbal abuse — One Love", url: "https://www.joinonelove.org/learn/11-common-patterns-verbal-abuse/" },
+  oneLoveInequality: { label: "Signs of inequality — One Love", url: "https://www.joinonelove.org/learn/4-signs-your-relationship-is-based-on-inequality/" },
+  oneLoveProve: { label: "“Prove your love” asks — One Love", url: "https://www.joinonelove.org/learn/has-your-s-o-asked-you-to-do-any-of-these-things-to-prove-your-love/" },
+
+  // Psychology Today
+  ptStonewall: { label: "Why stonewalling is emotional abuse — Psychology Today", url: "https://www.psychologytoday.com/us/blog/invisible-bruises/202411/stonewalling-as-a-form-of-emotional-abuse" },
+} as const;
+
+// Two tactic-specific links per pattern. The third slot, when present, is
+// added by SITUATION_RESOURCES based on what the sentence is actually about.
 const TACTIC_RESOURCES: Record<string, AnalysisResource[]> = {
-  "manufactured insecurity": [
-    { label: "One Love — signs of an unhealthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
-    { label: "Is it love or control? — loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "withdrawal as punishment": [
-    { label: "The silent treatment — Psychology Today", url: "https://www.psychologytoday.com/us/blog/invisible-bruises/202101/the-silent-treatment-is-emotional-abuse" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "testing tolerance": [
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-    { label: "One Love Foundation", url: "https://www.joinonelove.org" },
-  ],
-  "embedded criticism": [
-    { label: "One Love — 10 signs of an unhealthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "alternating warmth and coldness": [
-    { label: "One Love — healthy vs unhealthy", url: "https://www.joinonelove.org/learn/10-signs-of-an-unhealthy-relationship" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "frame control": [
-    { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "information management": [
-    { label: "Gaslighting — The hotline", url: "https://www.thehotline.org/resources/what-is-gaslighting" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "debt mechanism": [
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
-  ],
-  "identity erosion": [
-    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
-  "clean result": [
-    { label: "One Love — signs of a healthy relationship", url: "https://www.joinonelove.org/learn/10-signs-of-a-healthy-relationship" },
-    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
-  ],
+  "manufactured insecurity": [R.oneLoveUnhealthy, R.lirSpectrum],
+  "withdrawal as punishment": [R.ptStonewall, R.hotlineUnderstand],
+  "testing tolerance": [R.oneLoveProve, R.lirQuiz],
+  "embedded criticism": [R.oneLoveVerbal, R.oneLoveEmotional],
+  "alternating warmth and coldness": [R.oneLoveUnhealthy, R.hotlineUnderstand],
+  "frame control": [R.hotlineGaslighting, R.lirSpectrum],
+  "information management": [R.hotlineGaslighting, R.hotlineTypes],
+  "debt mechanism": [R.hotlineCoercedDebt, R.hotlineFinancial],
+  "identity erosion": [R.oneLoveInequality, R.hotlineUnderstand],
+  "minimization after harm": [R.hotlineUnderstand, R.hotlineBrokeSilence],
+  "consent erosion": [R.lirCoercion, R.rainnCoercion],
+  "clean result": [R.oneLoveHealthy, R.lirBasics],
 };
 
-function alignResourcesToTactic(payload: AnalysisPayload): AnalysisPayload {
-  if (!payload.tactic) return payload;
-  // The tactic field is "<label> — explanation". Grab the label half.
-  const head = payload.tactic.split(/[—:\-]/)[0]?.trim().toLowerCase() ?? "";
-  if (!head) return payload;
-  for (const [key, resources] of Object.entries(TACTIC_RESOURCES)) {
-    if (head.includes(key)) {
-      return { ...payload, resources };
+// Lightweight situation detector. Each bucket matches keywords/phrases in the
+// sentence + context and adds ONE topical link. This is what makes the bottom
+// resource feel specific — "she mentioned he checks her phone" → digital /
+// monitoring link; "he made me quit my job" → financial link.
+type Situation = { match: RegExp; resource: AnalysisResource };
+const SITUATIONS: Situation[] = [
+  // Monitoring / digital / phone surveillance
+  {
+    match: /\b(check(s|ed|ing)? (my|her|the) phone|reads? my (texts|messages|dms)|tracks? (my|her) location|find my|share location|password|airtag|spyware|monitor|surveil)\b/i,
+    resource: R.oneLoveEmotional,
+  },
+  // Isolation from friends/family
+  {
+    match: /\b(my friends|her friends|my family|her family|isolat|alone with|stopped seeing|cut off|don'?t (let|want) me see|move away|moved away from)\b/i,
+    resource: R.hotlineUnderstand,
+  },
+  // Money / job / financial control
+  {
+    match: /\b(money|cash|paycheck|salary|rent|bills?|account|allowance|credit card|debt|loan|quit (my|her) job|won'?t let me work|controls? (the )?(money|finances)|venmo|zelle)\b/i,
+    resource: R.hotlineFinancial,
+  },
+  // Sex / consent
+  {
+    match: /\b(sex|sexual|in bed|hookup|condom|consent|coerc|pressur(e|ed) me|guilt(ed)? me into|owe(d)? him|owed me|wouldn'?t stop|kept going)\b/i,
+    resource: R.lirCoercion,
+  },
+  // Kids / pregnancy
+  {
+    match: /\b(kids?|child(ren)?|baby|pregnan|custody|daycare|school pickup)\b/i,
+    resource: R.wlSafetyPlan,
+  },
+  // Jealousy / possessiveness / accusations
+  {
+    match: /\b(jealous|possessive|accus(e|ed|ing) me|cheating|flirt|talk(ed|ing) to (another|other) (guy|man|woman|girl)|who were you with)\b/i,
+    resource: R.oneLoveProve,
+  },
+  // Gaslighting / reality denial / "you're crazy"
+  {
+    match: /\b(you'?re crazy|losing it|imagin(ing|ed)|never said that|never happened|making it up|overreact|too sensitive|memory|remember (it )?wrong)\b/i,
+    resource: R.hotlineGaslighting,
+  },
+  // Apology / "he's sorry" / promised to change
+  {
+    match: /\b(sorry|apologi[sz]e|cri(ed|ing)|promis(e|ed) (he|she|they)|won'?t happen again|forgive me|begged|made it up to)\b/i,
+    resource: R.hotlineBrokeSilence,
+  },
+  // Considering leaving / staying / break up
+  {
+    match: /\b(leave (him|her|them)|leaving|break up|broke up|move out|moving out|stay with|should i stay|threaten(s|ed) to leave)\b/i,
+    resource: R.hotlineLeaving,
+  },
+  // Silent treatment / stonewalling
+  {
+    match: /\b(silent treatment|stonewall|ignor(es|ed) me|won'?t talk|shuts? (me )?out|gives me the silent)\b/i,
+    resource: R.ptStonewall,
+  },
+];
+
+function pickSituation(sentence: string, context: string | null): AnalysisResource | null {
+  const haystack = `${sentence}\n${context ?? ""}`;
+  for (const s of SITUATIONS) {
+    if (s.match.test(haystack)) return s.resource;
+  }
+  return null;
+}
+
+function dedupeResources(list: AnalysisResource[]): AnalysisResource[] {
+  const seen = new Set<string>();
+  const out: AnalysisResource[] = [];
+  for (const r of list) {
+    if (seen.has(r.url)) continue;
+    seen.add(r.url);
+    out.push(r);
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
+function alignResourcesToTactic(
+  payload: AnalysisPayload,
+  sentence: string,
+  context: string | null,
+): AnalysisPayload {
+  let tacticLinks: AnalysisResource[] | null = null;
+  if (payload.tactic) {
+    const head = payload.tactic.split(/[—:\-]/)[0]?.trim().toLowerCase() ?? "";
+    if (head) {
+      for (const [key, resources] of Object.entries(TACTIC_RESOURCES)) {
+        if (head.includes(key)) {
+          tacticLinks = resources;
+          break;
+        }
+      }
     }
   }
-  return payload;
+
+  const situation = pickSituation(sentence, context);
+  // Fallback: if no tactic match, lean on the situation link plus a
+  // general explainer so we still ship something specific.
+  const base = tacticLinks ?? [R.hotlineUnderstand, R.lirSpectrum];
+  const combined = situation ? [...base, situation] : base;
+  return { ...payload, resources: dedupeResources(combined) };
 }
 
 async function notifySlack(input: {
