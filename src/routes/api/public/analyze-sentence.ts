@@ -89,59 +89,52 @@ const SEX_COERCION_PHRASES = [
   "without consent",
 ];
 
+// Canned fallbacks — only used when the model call fails. The live SAFETY
+// path now runs the model with a safety addendum so the read is actually
+// done; these stay in place purely as no-questions, statement-only defaults.
+
+const SAFETY_CRISIS_RESOURCES: AnalysisResource[] = [
+  { label: "The hotline — chat available 24/7", url: "https://www.thehotline.org" },
+  { label: "Safety planning — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/safety-planning" },
+];
+
+const SEX_COERCION_RESOURCES: AnalysisResource[] = [
+  { label: "RAINN — 24/7 hotline & chat", url: "https://www.rainn.org" },
+  { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+];
+
 const SAFETY_RESPONSE: AnalysisPayload = {
   wearing:
-    "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
-  did: "Please reach out to someone who can help you tonight. Is there someone you trust you can text right now?",
-  tactic: null,
-  closing: "",
-  resources: [
-    {
-      label: "The hotline — chat available",
-      url: "https://www.thehotline.org",
-    },
-    {
-      label: "r/abusiverelationships",
-      url: "https://reddit.com/r/abusiverelationships",
-    },
-  ],
+    "What you described includes physical harm. The aftermath — the apology, the explanation that he didn't mean it that hard — is a familiar pattern that often follows incidents like this, not proof that it won't happen again.",
+  did: "Reading his words again won't change what his hands did. The crisis line below is staffed 24/7 by people trained for exactly this, and reaching out doesn't commit you to leaving, reporting, or doing anything you aren't ready to do.",
+  tactic:
+    "minimization after harm — framing what happened as an accident or misjudgment ('I didn't think it was too hard,' 'I panicked') shifts the focus from his action to his intent.",
+  closing: "What he did counts as what he did. You're allowed to name it that way.",
+  resources: SAFETY_CRISIS_RESOURCES,
 };
 
 const SEX_COERCION_RESPONSE: AnalysisPayload = {
   wearing:
-    "What you're describing sounds like it crossed into sexual coercion — being pushed, guilted, or told you couldn't say no. That isn't something this tool should try to read for you in a card.",
-  did: "There are people trained for exactly this, and talking to them doesn't commit you to anything. RAINN's hotline is free, confidential, and available 24/7.",
-  tactic: null,
+    "What you described sounds like it crossed into sexual coercion — being pushed, guilted, or unable to say no. The framing he used afterward doesn't undo what happened in the moment.",
+  did: "RAINN is staffed 24/7 by people trained specifically for this. Talking to them is free, confidential, and doesn't commit you to reporting or to any next step.",
+  tactic:
+    "consent erosion — pressure, debt, or incapacity used to override a no, then reframed afterward as something you went along with.",
   closing: "What you felt about it counts. You're allowed to call it what it was.",
-  resources: [
-    {
-      label: "RAINN — 24/7 hotline & chat",
-      url: "https://www.rainn.org",
-    },
-    {
-      label: "loveisrespect.org",
-      url: "https://www.loveisrespect.org",
-    },
-  ],
+  resources: SEX_COERCION_RESOURCES,
 };
 
 const FAILURE_PAYLOAD: AnalysisPayload = {
   wearing:
-    "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
-  did: "Want to try sending it again?",
+    "Something didn't work on our end, so the read didn't come through. What you brought here is worth a real response — sending it again usually clears it up.",
+  did: "In the meantime, the resources below are good standing options regardless of what the sentence turns out to mean.",
   tactic: null,
   closing: "",
   resources: [
-    {
-      label: "r/relationships",
-      url: "https://reddit.com/r/relationships",
-    },
-    {
-      label: "The hotline — chat available",
-      url: "https://www.thehotline.org",
-    },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
   ],
 };
+
 
 interface AnalysisResource {
   label: string;
