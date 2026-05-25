@@ -842,7 +842,7 @@ function coerceResources(raw: unknown): AnalysisResource[] {
         out.push({ label, url });
       }
     }
-    if (out.length >= 2) break;
+    if (out.length >= 3) break;
   }
   return out.length > 0 ? out : FAILURE_PAYLOAD.resources;
 }
