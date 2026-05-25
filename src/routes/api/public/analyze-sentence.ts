@@ -782,6 +782,44 @@ async function callAnthropic(
   sentence: string,
   context: string | null,
   followups: FollowupAnswers,
+  mode: "normal" | "safety" = "normal",
+): Promise<AnalysisPayload | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error("[analyze-sentence] missing ANTHROPIC_API_KEY");
+    return null;
+  }
+
+  const system = mode === "safety" ? SYSTEM_PROMPT + SAFETY_ADDENDUM : SYSTEM_PROMPT;
+
+  const lines: string[] = [`sentence: ${sentence}`];
+  if (context) lines.push(`optional_context: ${context}`);
+  if (followups.pattern) lines.push(`pattern_answer: ${followups.pattern}`);
+  if (followups.pushback) lines.push(`pushback_answer: ${followups.pushback}`);
+  if (followups.freedom) lines.push(`freedom_answer: ${followups.freedom}`);
+  if (followups.safety) lines.push(`safety_answer: ${followups.safety}`);
+  const userMessage = lines.join("\n");
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        temperature: 0.4,
+        system,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+
+  sentence: string,
+  context: string | null,
+  followups: FollowupAnswers,
 ): Promise<AnalysisPayload | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
