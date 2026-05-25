@@ -1036,7 +1036,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         if (!rawAnalysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
         }
-        const analysis = alignResourcesToTactic(rawAnalysis);
+        const analysis = alignResourcesToTactic(rawAnalysis, input.sentence, input.context);
 
         // STEP 3 — log + return
         await logSubmission({
