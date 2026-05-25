@@ -319,6 +319,21 @@ OUTPUT RULES:
 - No markdown, no bullet points, no headings.
 - Return only the JSON object — no prose, no backticks.`;
 
+// Appended to SYSTEM_PROMPT when the input has tripped a physical-harm or
+// sex-coercion pre-filter. The job is still to read the sentence (not skip
+// the read), but with awareness that the situation is acute.
+const SAFETY_ADDENDUM = `
+
+SAFETY MODE — the input you just received contains signals of physical harm, strangulation, threats, or sexual coercion. Stay in your normal job: read what the sentence did to her. Do NOT skip the read. Do NOT tell her to call anyone, leave, stay, report, or take any specific action — keep authority with her as always.
+
+Additional guidance for this mode:
+- In "wearing" and "did", name what actually happened in plain language. If there's an apology or minimizing aftermath ("I didn't mean to", "I panicked", "I didn't think it was that hard"), name that pattern.
+- "tactic" must not be null. Pick the closest label from the list, or use a plain-language name like "minimization after harm", "consent erosion", or "framing his loss of control as her preference issue". Add one short explanatory clause.
+- Do not write any sentence that ends in a question. No "is there someone you can call?" — instead a statement like "the resources below are staffed 24/7 and reaching out doesn't commit you to anything."
+- "closing" is one short statement that hands the read back to her (e.g. "what he did counts as what he did. you're allowed to name it that way.").
+- Resources will be overridden with crisis lines server-side. You may still return any 2 resources; they will be replaced.`;
+
+
 export interface FollowupAnswers {
   pattern?: string | null;
   pushback?: string | null;
