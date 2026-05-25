@@ -1006,7 +1006,13 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
 
         if (physicalSafety || sexCoercion) {
           const fallback = sexCoercion ? SEX_COERCION_RESPONSE : SAFETY_RESPONSE;
-          const lockedResources = sexCoercion ? SEX_COERCION_RESOURCES : SAFETY_CRISIS_RESOURCES;
+          const crisisResources = sexCoercion ? SEX_COERCION_RESOURCES : SAFETY_CRISIS_RESOURCES;
+          // Crisis links stay locked, but append one situation-specific link
+          // so the bottom resource feels like it knows what was just said.
+          const situation = pickSituation(input.sentence, input.context);
+          const lockedResources = dedupeResources(
+            situation ? [...crisisResources, situation] : crisisResources,
+          );
 
           const rawSafety = await callAnthropic(
             input.sentence,
@@ -1016,7 +1022,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           );
           const analysis: AnalysisPayload = rawSafety
             ? { ...rawSafety, resources: lockedResources }
-            : fallback;
+            : { ...fallback, resources: lockedResources };
 
           await logSubmission({
             sessionId: input.sessionId,
