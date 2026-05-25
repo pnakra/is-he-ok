@@ -89,59 +89,52 @@ const SEX_COERCION_PHRASES = [
   "without consent",
 ];
 
+// Canned fallbacks — only used when the model call fails. The live SAFETY
+// path now runs the model with a safety addendum so the read is actually
+// done; these stay in place purely as no-questions, statement-only defaults.
+
+const SAFETY_CRISIS_RESOURCES: AnalysisResource[] = [
+  { label: "The hotline — chat available 24/7", url: "https://www.thehotline.org" },
+  { label: "Safety planning — womenslaw.org", url: "https://www.womenslaw.org/about-abuse/safety-planning" },
+];
+
+const SEX_COERCION_RESOURCES: AnalysisResource[] = [
+  { label: "RAINN — 24/7 hotline & chat", url: "https://www.rainn.org" },
+  { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+];
+
 const SAFETY_RESPONSE: AnalysisPayload = {
   wearing:
-    "What you're describing sounds like you may be in immediate danger. This isn't something to read at right now — it's something to act on.",
-  did: "Please reach out to someone who can help you tonight. Is there someone you trust you can text right now?",
-  tactic: null,
-  closing: "",
-  resources: [
-    {
-      label: "The hotline — chat available",
-      url: "https://www.thehotline.org",
-    },
-    {
-      label: "r/abusiverelationships",
-      url: "https://reddit.com/r/abusiverelationships",
-    },
-  ],
+    "What you described includes physical harm. The aftermath — the apology, the explanation that he didn't mean it that hard — is a familiar pattern that often follows incidents like this, not proof that it won't happen again.",
+  did: "Reading his words again won't change what his hands did. The crisis line below is staffed 24/7 by people trained for exactly this, and reaching out doesn't commit you to leaving, reporting, or doing anything you aren't ready to do.",
+  tactic:
+    "minimization after harm — framing what happened as an accident or misjudgment ('I didn't think it was too hard,' 'I panicked') shifts the focus from his action to his intent.",
+  closing: "What he did counts as what he did. You're allowed to name it that way.",
+  resources: SAFETY_CRISIS_RESOURCES,
 };
 
 const SEX_COERCION_RESPONSE: AnalysisPayload = {
   wearing:
-    "What you're describing sounds like it crossed into sexual coercion — being pushed, guilted, or told you couldn't say no. That isn't something this tool should try to read for you in a card.",
-  did: "There are people trained for exactly this, and talking to them doesn't commit you to anything. RAINN's hotline is free, confidential, and available 24/7.",
-  tactic: null,
+    "What you described sounds like it crossed into sexual coercion — being pushed, guilted, or unable to say no. The framing he used afterward doesn't undo what happened in the moment.",
+  did: "RAINN is staffed 24/7 by people trained specifically for this. Talking to them is free, confidential, and doesn't commit you to reporting or to any next step.",
+  tactic:
+    "consent erosion — pressure, debt, or incapacity used to override a no, then reframed afterward as something you went along with.",
   closing: "What you felt about it counts. You're allowed to call it what it was.",
-  resources: [
-    {
-      label: "RAINN — 24/7 hotline & chat",
-      url: "https://www.rainn.org",
-    },
-    {
-      label: "loveisrespect.org",
-      url: "https://www.loveisrespect.org",
-    },
-  ],
+  resources: SEX_COERCION_RESOURCES,
 };
 
 const FAILURE_PAYLOAD: AnalysisPayload = {
   wearing:
-    "Something didn't work on our end. Try again in a moment — what you brought here is worth a real read.",
-  did: "Want to try sending it again?",
+    "Something didn't work on our end, so the read didn't come through. What you brought here is worth a real response — sending it again usually clears it up.",
+  did: "In the meantime, the resources below are good standing options regardless of what the sentence turns out to mean.",
   tactic: null,
   closing: "",
   resources: [
-    {
-      label: "r/relationships",
-      url: "https://reddit.com/r/relationships",
-    },
-    {
-      label: "The hotline — chat available",
-      url: "https://www.thehotline.org",
-    },
+    { label: "loveisrespect.org", url: "https://www.loveisrespect.org" },
+    { label: "The hotline — chat available", url: "https://www.thehotline.org" },
   ],
 };
+
 
 interface AnalysisResource {
   label: string;
@@ -181,6 +174,7 @@ You must follow these rules:
 
 5. Speak directly to her.
    - Use "you", not "she" or "they".
+   - Never end any field with a question. There is no follow-up turn — she sees this response and that's it. Every sentence must be a complete statement or a complete suggestion that stands on its own. Do not write things like "is there someone you trust?", "want to try again?", "have you noticed this before?". Rephrase any question as a statement (e.g. "the hotline below is staffed 24/7" instead of "could you call the hotline tonight?").
 
 6. Acknowledge clean moments.
    - If the sentence clearly respects her agency, say that.
@@ -324,6 +318,21 @@ ESCALATION / HIGH CONTROL / SAFETY CONCERN:
 OUTPUT RULES:
 - No markdown, no bullet points, no headings.
 - Return only the JSON object — no prose, no backticks.`;
+
+// Appended to SYSTEM_PROMPT when the input has tripped a physical-harm or
+// sex-coercion pre-filter. The job is still to read the sentence (not skip
+// the read), but with awareness that the situation is acute.
+const SAFETY_ADDENDUM = `
+
+SAFETY MODE — the input you just received contains signals of physical harm, strangulation, threats, or sexual coercion. Stay in your normal job: read what the sentence did to her. Do NOT skip the read. Do NOT tell her to call anyone, leave, stay, report, or take any specific action — keep authority with her as always.
+
+Additional guidance for this mode:
+- In "wearing" and "did", name what actually happened in plain language. If there's an apology or minimizing aftermath ("I didn't mean to", "I panicked", "I didn't think it was that hard"), name that pattern.
+- "tactic" must not be null. Pick the closest label from the list, or use a plain-language name like "minimization after harm", "consent erosion", or "framing his loss of control as her preference issue". Add one short explanatory clause.
+- Do not write any sentence that ends in a question. No "is there someone you can call?" — instead a statement like "the resources below are staffed 24/7 and reaching out doesn't commit you to anything."
+- "closing" is one short statement that hands the read back to her (e.g. "what he did counts as what he did. you're allowed to name it that way.").
+- Resources will be overridden with crisis lines server-side. You may still return any 2 resources; they will be replaced.`;
+
 
 export interface FollowupAnswers {
   pattern?: string | null;
@@ -773,12 +782,15 @@ async function callAnthropic(
   sentence: string,
   context: string | null,
   followups: FollowupAnswers,
+  mode: "normal" | "safety" = "normal",
 ): Promise<AnalysisPayload | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error("[analyze-sentence] missing ANTHROPIC_API_KEY");
     return null;
   }
+
+  const system = mode === "safety" ? SYSTEM_PROMPT + SAFETY_ADDENDUM : SYSTEM_PROMPT;
 
   const lines: string[] = [`sentence: ${sentence}`];
   if (context) lines.push(`optional_context: ${context}`);
@@ -800,10 +812,12 @@ async function callAnthropic(
         model: "claude-sonnet-4-6",
         max_tokens: 1000,
         temperature: 0.4,
-        system: SYSTEM_PROMPT,
+        system,
         messages: [{ role: "user", content: userMessage }],
       }),
     });
+
+
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
@@ -873,37 +887,39 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           return buildResponse(FAILURE_PAYLOAD, false);
         }
 
-        // STEP 1a — physical-danger safety pre-filter
-        if (isSafetyFlagged(input.sentence, input.context)) {
+        // STEP 1 — safety / sex-coercion tier: run the model in safety mode
+        // so we get a real read, then force crisis resources server-side.
+        const physicalSafety = isSafetyFlagged(input.sentence, input.context);
+        const sexCoercion = !physicalSafety && isSexCoercionFlagged(input.sentence, input.context);
+
+        if (physicalSafety || sexCoercion) {
+          const fallback = sexCoercion ? SEX_COERCION_RESPONSE : SAFETY_RESPONSE;
+          const lockedResources = sexCoercion ? SEX_COERCION_RESOURCES : SAFETY_CRISIS_RESOURCES;
+
+          const rawSafety = await callAnthropic(
+            input.sentence,
+            input.context,
+            input.followups,
+            "safety",
+          );
+          const analysis: AnalysisPayload = rawSafety
+            ? { ...rawSafety, resources: lockedResources }
+            : fallback;
+
           await logSubmission({
             sessionId: input.sessionId,
             sentence: input.sentence,
             context: input.context,
-            analysis: JSON.stringify(SAFETY_RESPONSE),
+            analysis: JSON.stringify(analysis),
             safetyFlagged: true,
             followups: input.followups,
             triageStatus: input.triageStatus ?? "SAFETY",
             prolificId: input.prolificId,
           });
-          return buildResponse(SAFETY_RESPONSE, true);
+          return buildResponse(analysis, true);
         }
 
-        // STEP 1b — sex-coercion pre-filter (routes to RAINN)
-        if (isSexCoercionFlagged(input.sentence, input.context)) {
-          await logSubmission({
-            sessionId: input.sessionId,
-            sentence: input.sentence,
-            context: input.context,
-            analysis: JSON.stringify(SEX_COERCION_RESPONSE),
-            safetyFlagged: true,
-            followups: input.followups,
-            triageStatus: input.triageStatus ?? "SAFETY",
-            prolificId: input.prolificId,
-          });
-          return buildResponse(SEX_COERCION_RESPONSE, true);
-        }
-
-        // STEP 2 — Anthropic
+        // STEP 2 — Anthropic (normal mode)
         const rawAnalysis = await callAnthropic(input.sentence, input.context, input.followups);
         if (!rawAnalysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
@@ -923,6 +939,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         });
 
         return buildResponse(analysis, false);
+
       },
     },
   },
