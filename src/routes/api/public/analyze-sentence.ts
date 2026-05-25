@@ -887,37 +887,39 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           return buildResponse(FAILURE_PAYLOAD, false);
         }
 
-        // STEP 1a — physical-danger safety pre-filter
-        if (isSafetyFlagged(input.sentence, input.context)) {
+        // STEP 1 — safety / sex-coercion tier: run the model in safety mode
+        // so we get a real read, then force crisis resources server-side.
+        const physicalSafety = isSafetyFlagged(input.sentence, input.context);
+        const sexCoercion = !physicalSafety && isSexCoercionFlagged(input.sentence, input.context);
+
+        if (physicalSafety || sexCoercion) {
+          const fallback = sexCoercion ? SEX_COERCION_RESPONSE : SAFETY_RESPONSE;
+          const lockedResources = sexCoercion ? SEX_COERCION_RESOURCES : SAFETY_CRISIS_RESOURCES;
+
+          const rawSafety = await callAnthropic(
+            input.sentence,
+            input.context,
+            input.followups,
+            "safety",
+          );
+          const analysis: AnalysisPayload = rawSafety
+            ? { ...rawSafety, resources: lockedResources }
+            : fallback;
+
           await logSubmission({
             sessionId: input.sessionId,
             sentence: input.sentence,
             context: input.context,
-            analysis: JSON.stringify(SAFETY_RESPONSE),
+            analysis: JSON.stringify(analysis),
             safetyFlagged: true,
             followups: input.followups,
             triageStatus: input.triageStatus ?? "SAFETY",
             prolificId: input.prolificId,
           });
-          return buildResponse(SAFETY_RESPONSE, true);
+          return buildResponse(analysis, true);
         }
 
-        // STEP 1b — sex-coercion pre-filter (routes to RAINN)
-        if (isSexCoercionFlagged(input.sentence, input.context)) {
-          await logSubmission({
-            sessionId: input.sessionId,
-            sentence: input.sentence,
-            context: input.context,
-            analysis: JSON.stringify(SEX_COERCION_RESPONSE),
-            safetyFlagged: true,
-            followups: input.followups,
-            triageStatus: input.triageStatus ?? "SAFETY",
-            prolificId: input.prolificId,
-          });
-          return buildResponse(SEX_COERCION_RESPONSE, true);
-        }
-
-        // STEP 2 — Anthropic
+        // STEP 2 — Anthropic (normal mode)
         const rawAnalysis = await callAnthropic(input.sentence, input.context, input.followups);
         if (!rawAnalysis) {
           return buildResponse(FAILURE_PAYLOAD, false);
@@ -937,6 +939,7 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         });
 
         return buildResponse(analysis, false);
+
       },
     },
   },
