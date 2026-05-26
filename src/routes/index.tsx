@@ -543,7 +543,7 @@ function Index() {
                       color: "var(--color-text-faint)",
                     }}
                   >
-                    A clearer way to make sense of one sentence — from a guy you're dating, talking to, or hooking up with.
+                    A clearer way to make sense of one sentence — from a guy in your life: dating, talking, hooking up.
                   </p>
                 </header>
               )}
