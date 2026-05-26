@@ -9,7 +9,9 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type AppState = "empty" | "triaging" | "followup" | "loading" | "output";
+type AppState = "empty" | "triaging" | "followup" | "loading" | "output" | "off_domain";
+
+type OffDomainBucket = "workplace" | "family" | "stranger" | "generic";
 
 interface Resource {
   label: string;
@@ -63,7 +65,8 @@ const FOLLOWUP_QUESTIONS: Record<FollowupKey, FollowupQuestion> = {
 };
 
 interface TriageResponse {
-  status: "READY" | "NEEDS_FOLLOWUP" | "SAFETY";
+  status: "READY" | "NEEDS_FOLLOWUP" | "SAFETY" | "OFF_DOMAIN";
+  reason?: string;
   ask_pattern?: boolean;
   ask_pushback?: boolean;
   ask_freedom?: boolean;
@@ -207,6 +210,7 @@ function Index() {
   const [answers, setAnswers] = useState<Partial<Record<FollowupKey, string>>>({});
 
   const [prolificId, setProlificId] = useState<string | null>(null);
+  const [offDomainBucket, setOffDomainBucket] = useState<OffDomainBucket | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -370,6 +374,17 @@ function Index() {
     const triage = await callTriage(sentence, ctx);
     track("iho_triage_result", { sessionId, status: triage.status });
 
+    if (triage.status === "OFF_DOMAIN") {
+      const allowed: OffDomainBucket[] = ["workplace", "family", "stranger", "generic"];
+      const raw = (triage.reason ?? "").trim().toLowerCase();
+      const bucket: OffDomainBucket = (allowed as string[]).includes(raw)
+        ? (raw as OffDomainBucket)
+        : "generic";
+      setOffDomainBucket(bucket);
+      setState("off_domain");
+      return;
+    }
+
     if (triage.status === "NEEDS_FOLLOWUP") {
       const asked: FollowupQuestion[] = [];
       if (triage.ask_pattern) asked.push(FOLLOWUP_QUESTIONS.pattern);
@@ -444,6 +459,7 @@ function Index() {
     setUsedFollowups(false);
     setAskedQuestions([]);
     setAnswers({});
+    setOffDomainBucket(null);
     setState("empty");
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -527,7 +543,7 @@ function Index() {
                       color: "var(--color-text-faint)",
                     }}
                   >
-                    A clearer way to make sense of one sentence.
+                    A clearer way to make sense of one sentence — from a guy you're dating, talking to, or hooking up with.
                   </p>
                 </header>
               )}
@@ -803,6 +819,17 @@ function Index() {
             </div>
           )}
 
+          {/* Off-domain soft decline */}
+          {state === "off_domain" && (
+            <OffDomainView
+              sentence={submittedSentence}
+              bucket={offDomainBucket ?? "generic"}
+              onReset={handleReset}
+            />
+          )}
+
+
+
           {/* Output */}
           {state === "output" && analysis && (
             <article
@@ -1019,5 +1046,138 @@ function OverallFeedback({ sessionId }: { sessionId: string }) {
         allowNote
       />
     </div>
+  );
+}
+
+const OFF_DOMAIN_COPY: Record<
+  OffDomainBucket,
+  { lead: string; suggestion: string; resource?: { label: string; url: string } }
+> = {
+  workplace: {
+    lead: "This one sounds like it came from work — a boss, coworker, or someone in a professional setting.",
+    suggestion:
+      "Is he ok? is built for things said by guys you're dating, talking to, or hooking up with. The patterns it names work differently in workplace dynamics, so we'd rather not give you a read that doesn't fit.",
+    resource: {
+      label: "Catalyst — workplace dynamics for women",
+      url: "https://www.catalyst.org/research/",
+    },
+  },
+  family: {
+    lead: "This one sounds like it came from a family member.",
+    suggestion:
+      "Is he ok? is built for things said by guys you're dating, talking to, or hooking up with. Family dynamics need a different kind of read than what this tool is set up to do.",
+  },
+  stranger: {
+    lead: "This one sounds like it came from a stranger or someone in public.",
+    suggestion:
+      "Is he ok? is built for things said by guys you're dating, talking to, or hooking up with. For street harassment or unwanted attention from strangers, the resource below is a better fit.",
+    resource: {
+      label: "Right To Be — responding to harassment",
+      url: "https://righttobe.org/",
+    },
+  },
+  generic: {
+    lead: "This one reads more like a general comment about men than something a specific guy said to you.",
+    suggestion:
+      "Is he ok? works best on one real sentence — something he actually said, in a moment that felt off. If you have one in mind, try sending that instead.",
+  },
+};
+
+function OffDomainView({
+  sentence,
+  bucket,
+  onReset,
+}: {
+  sentence: string;
+  bucket: OffDomainBucket;
+  onReset: () => void;
+}) {
+  const copy = OFF_DOMAIN_COPY[bucket];
+  return (
+    <article
+      role="region"
+      aria-label="Out of scope"
+      className="animate-rise-in mx-auto w-full max-w-[640px]"
+    >
+      {sentence && (
+        <blockquote
+          className="font-display"
+          style={{
+            fontSize: "18px",
+            lineHeight: 1.55,
+            fontStyle: "italic",
+            color: "var(--color-foreground)",
+            background: "var(--color-surface-2)",
+            borderLeft: "3px solid var(--color-divider)",
+            padding: "14px 18px",
+            borderRadius: "6px",
+            marginBottom: "20px",
+          }}
+        >
+          “{sentence}”
+        </blockquote>
+      )}
+      <p
+        className="text-foreground"
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: "17px",
+          lineHeight: 1.6,
+          marginBottom: "14px",
+        }}
+      >
+        {copy.lead}
+      </p>
+      <p
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: "15px",
+          lineHeight: 1.65,
+          color: "var(--color-muted-foreground)",
+        }}
+      >
+        {copy.suggestion}
+      </p>
+
+      {copy.resource && (
+        <section style={{ marginTop: "28px" }}>
+          <h2
+            className="text-[14px] font-medium text-foreground"
+            style={{ fontFamily: "var(--font-sans)" }}
+          >
+            One place that might help
+          </h2>
+          <ul className="mt-3">
+            <li>
+              <a
+                href={copy.resource.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-[15px] no-underline hover:underline"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  color: "var(--color-primary)",
+                  textUnderlineOffset: "3px",
+                }}
+              >
+                <span>{copy.resource.label}</span>
+                <span aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </section>
+      )}
+
+      <div className="flex items-center justify-center" style={{ marginTop: "36px" }}>
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex min-h-[44px] items-center justify-center bg-primary px-6 py-2 text-[14px] font-medium text-primary-foreground transition-colors hover:bg-[var(--color-accent-hover)]"
+          style={{ fontFamily: "var(--font-sans)", borderRadius: "10px" }}
+        >
+          Try another sentence
+        </button>
+      </div>
+    </article>
   );
 }

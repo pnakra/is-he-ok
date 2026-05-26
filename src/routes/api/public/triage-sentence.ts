@@ -83,13 +83,15 @@ const SEX_COERCION_PHRASES = [
   "without consent",
 ];
 
-const SYSTEM_PROMPT = `You are a classifier for "Is He OK?", a tool that helps girls and young women make sense of one sentence that felt off in a relationship or dating context.
+const SYSTEM_PROMPT = `You are a classifier for "Is He OK?", a tool that helps girls and young women make sense of one sentence that felt off from a guy they are dating, talking to, hooking up with, or in an intimate relationship with.
 
-Your only job is to decide whether the user's input is too ambiguous or underspecified to analyze responsibly without asking 2–3 very short follow-up questions first.
+Your job is to decide one of four things about the input:
+1. It is in scope and ready to analyze.
+2. It is in scope but too thin — ask 2–3 short follow-ups first.
+3. It is in scope but describes acute physical danger or sexual coercion.
+4. It is OUT OF SCOPE — the sentence is from someone who is clearly not a romantic / dating / sexual partner (e.g. a boss, coworker, parent, sibling, teacher, friend, stranger on the street, online troll, generic "men say this" commentary).
 
-Be conservative:
-- If the sentence is already specific enough to analyze on its own, do NOT ask follow-up questions.
-- If the meaning depends heavily on pattern, what happens when she pushes back, or whether she still felt free to disagree, then ask follow-up questions.
+Be conservative on scope. Default to in-scope when the relationship is unclear or ambiguous — many users won't spell out "my boyfriend". Only mark OFF_DOMAIN when the input itself makes the non-intimate context explicit (named role, workplace setting, family member, public stranger, etc.) or when it is clearly generic commentary about men rather than a specific thing a partner said.
 
 ASK FOLLOW-UP QUESTIONS (status = NEEDS_FOLLOWUP) if:
 - the sentence is short and generic (e.g. "he said i always do this", "he was just worried about me", "he said it as a joke")
@@ -105,6 +107,8 @@ DO NOT ASK FOLLOW-UP QUESTIONS (status = READY) if:
 
 SAFETY (status = SAFETY): the input describes explicit violence, threats, coercion, being trapped, weapons, or immediate danger. Do not ask follow-ups.
 
+OFF_DOMAIN (status = OFF_DOMAIN): the input clearly comes from a non-intimate context. Set "reason" to a single bucket word: "workplace" (boss, coworker, manager, client, professor), "family" (parent, sibling, relative), "stranger" (public, online, catcalling, troll), or "generic" (broad commentary about "men" rather than a specific partner). Do not ask follow-ups.
+
 The follow-ups, when needed, only clarify:
 1. whether this is a pattern (ask_pattern)
 2. what happens when she pushes back (ask_pushback)
@@ -115,8 +119,8 @@ Never set ask_safety, and never set suggest_optional_context, to true. Never ask
 You must return valid JSON with this exact shape and nothing else:
 
 {
-  "status": "READY" | "NEEDS_FOLLOWUP" | "SAFETY",
-  "reason": "short string under 18 words",
+  "status": "READY" | "NEEDS_FOLLOWUP" | "SAFETY" | "OFF_DOMAIN",
+  "reason": "short string under 18 words (for OFF_DOMAIN: one of workplace|family|stranger|generic)",
   "ask_pattern": true | false,
   "ask_pushback": true | false,
   "ask_freedom": true | false,
@@ -126,7 +130,7 @@ You must return valid JSON with this exact shape and nothing else:
 
 Rules:
 - If status is NEEDS_FOLLOWUP, set at least ask_pattern and ask_pushback to true.
-- If status is READY or SAFETY, set all ask_* fields to false.
+- If status is READY, SAFETY, or OFF_DOMAIN, set all ask_* fields to false.
 - Return only the JSON object — no prose, no backticks.
 
 Examples of likely READY:
@@ -145,9 +149,16 @@ Examples of likely SAFETY:
 - "he threatened me"
 - "he blocked the door"
 - "he said he'd kill himself if i left"
-- "he hit me"`;
+- "he hit me"
 
-export type TriageStatus = "READY" | "NEEDS_FOLLOWUP" | "SAFETY";
+Examples of likely OFF_DOMAIN:
+- "my boss said my idea was cute" → workplace
+- "a guy on the train told me to smile" → stranger
+- "my dad said i'm being dramatic" → family
+- "guys are going to only want you for one thing" (no partner context, reads as generic commentary about men) → generic
+- "my coworker keeps interrupting me in meetings" → workplace`;
+
+export type TriageStatus = "READY" | "NEEDS_FOLLOWUP" | "SAFETY" | "OFF_DOMAIN";
 
 export interface TriageResult {
   status: TriageStatus;
@@ -213,7 +224,13 @@ function coerce(raw: unknown): TriageResult | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const status = r.status;
-  if (status !== "READY" && status !== "NEEDS_FOLLOWUP" && status !== "SAFETY") return null;
+  if (
+    status !== "READY" &&
+    status !== "NEEDS_FOLLOWUP" &&
+    status !== "SAFETY" &&
+    status !== "OFF_DOMAIN"
+  )
+    return null;
   return {
     status,
     reason: typeof r.reason === "string" ? r.reason.slice(0, 200) : "",
