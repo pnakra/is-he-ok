@@ -1,4 +1,10 @@
 import { useState } from "react";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   logFeedback,
   type FeedbackComponent,
@@ -11,7 +17,7 @@ interface FeedbackChipsProps {
   slot?: string;
   /** Slightly different prompt text per context. */
   prompt?: string;
-  /** When true, shows an optional one-line note input on "not_quite" / "confusing". */
+  /** Kept for back-compat; popover always handles the "why". */
   allowNote?: boolean;
   /** Larger style for the end-of-flow overall prompt. */
   emphasis?: "subtle" | "soft";
@@ -19,163 +25,261 @@ interface FeedbackChipsProps {
   align?: "left" | "center";
 }
 
-const PER_CARD_OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
-  { rating: "helpful", label: "Yes" },
-  { rating: "not_quite", label: "Not quite" },
-  { rating: "confusing", label: "Confusing" },
-];
-
-const OVERALL_OPTIONS: Array<{ rating: FeedbackRating; label: string }> = [
-  { rating: "helpful", label: "Yes" },
-  { rating: "not_quite", label: "Not quite" },
-  { rating: "confusing", label: "Something else" },
-];
+const REASONS: Record<FeedbackComponent, string[]> = {
+  read: ["Doesn't match", "Too harsh", "Too soft", "Confusing"],
+  followup: ["Not relevant", "Too many", "Confusing"],
+  resource: ["Not relevant", "Bad link", "Not helpful"],
+  overall: ["Didn't match", "Too generic", "Missing something", "Confusing"],
+  // resource_click etc. won't render this component, but keep TS happy.
+} as unknown as Record<FeedbackComponent, string[]>;
 
 export function FeedbackChips({
   sessionId,
   component,
   slot,
   prompt = "Did this land?",
-  allowNote = false,
   emphasis = "subtle",
   align = "left",
 }: FeedbackChipsProps) {
-  const OPTIONS = component === "overall" ? OVERALL_OPTIONS : PER_CARD_OPTIONS;
-  const [picked, setPicked] = useState<FeedbackRating | null>(null);
+  const [picked, setPicked] = useState<"up" | "down" | null>(null);
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
-  const [noteSent, setNoteSent] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const showNoteField =
-    allowNote && (picked === "not_quite" || picked === "confusing") && !noteSent;
+  const reasons = REASONS[component] ?? REASONS.overall;
 
-  const handlePick = (rating: FeedbackRating) => {
-    if (picked) return;
-    setPicked(rating);
-    void logFeedback({ sessionId, component, rating, slot });
-  };
-
-  const handleSendNote = () => {
-    if (!picked || !note.trim()) {
-      setNoteSent(true);
-      return;
-    }
+  const send = (
+    rating: FeedbackRating,
+    extra?: { reason?: string | null; note?: string | null },
+  ) => {
+    const parts = [
+      extra?.reason ? `reason: ${extra.reason}` : null,
+      extra?.note?.trim() ? extra.note.trim() : null,
+    ].filter(Boolean);
     void logFeedback({
       sessionId,
       component,
-      rating: picked,
+      rating,
       slot,
-      note: note.trim(),
+      note: parts.length ? parts.join(" — ") : undefined,
     });
-    setNoteSent(true);
+  };
+
+  const handleUp = () => {
+    if (picked) return;
+    setPicked("up");
+    send("helpful");
+  };
+
+  const handleDown = () => {
+    if (picked) return;
+    setPicked("down");
+    setOpen(true);
+    // Log a baseline immediately, so we capture the negative signal
+    // even if the user dismisses the popover.
+    send("not_quite");
+  };
+
+  const submitReason = () => {
+    if (sent) {
+      setOpen(false);
+      return;
+    }
+    // Send a second row with structured detail; analytics joins by session+slot.
+    send("not_quite", { reason, note });
+    setSent(true);
+    setOpen(false);
   };
 
   const promptColor =
     emphasis === "soft" ? "var(--color-muted-foreground)" : "var(--color-text-faint)";
   const promptSize = emphasis === "soft" ? "13px" : "12px";
 
+  const iconBtn = (active: boolean, faded: boolean): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "30px",
+    height: "30px",
+    borderRadius: "999px",
+    border: `1px solid ${active ? "var(--color-primary)" : "var(--color-divider)"}`,
+    background: active ? "var(--color-primary)" : "transparent",
+    color: active
+      ? "var(--color-primary-foreground, #fff)"
+      : faded
+        ? "var(--color-text-faint)"
+        : "var(--color-muted-foreground)",
+    opacity: faded ? 0.5 : 1,
+    cursor: picked ? "default" : "pointer",
+    transition: "all 150ms ease",
+    padding: 0,
+  });
+
   return (
     <div
       style={{
         marginTop: emphasis === "soft" ? "0" : "10px",
         display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        alignItems: align === "center" ? "center" : "stretch",
+        alignItems: "center",
+        justifyContent: align === "center" ? "center" : "flex-start",
+        gap: "10px",
+        flexWrap: "wrap",
       }}
     >
-      <div
+      <span
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: align === "center" ? "center" : "flex-start",
-          gap: "10px",
-          flexWrap: "wrap",
+          fontFamily: "var(--font-sans)",
+          fontSize: promptSize,
+          color: promptColor,
         }}
       >
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: promptSize,
-            color: promptColor,
+        {picked ? "Thanks — noted." : prompt}
+      </span>
+      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={handleUp}
+          disabled={picked !== null}
+          aria-label="Helpful"
+          aria-pressed={picked === "up"}
+          style={iconBtn(picked === "up", picked === "down")}
+        >
+          <ThumbsUp size={14} strokeWidth={2} />
+        </button>
+
+        <Popover
+          open={open}
+          onOpenChange={(o) => {
+            // Only allow opening via thumbs-down click; allow closing freely.
+            if (!o) setOpen(false);
           }}
         >
-          {picked ? "Thanks — noted." : prompt}
-        </span>
-        <div style={{ display: "flex", gap: "6px" }}>
-          {OPTIONS.map((opt) => {
-            const isPicked = picked === opt.rating;
-            const isFaded = picked !== null && !isPicked;
-            return (
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              onClick={handleDown}
+              disabled={picked !== null && picked !== "down"}
+              aria-label="Not helpful"
+              aria-pressed={picked === "down"}
+              style={iconBtn(picked === "down", picked === "up")}
+            >
+              <ThumbsDown size={14} strokeWidth={2} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align={align === "center" ? "center" : "start"}
+            side="top"
+            sideOffset={8}
+            className="w-72 p-3"
+            style={{
+              background: "var(--color-surface-2, var(--color-background))",
+              border: "1px solid var(--color-divider)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "12px",
+                color: "var(--color-muted-foreground)",
+                marginBottom: "8px",
+              }}
+            >
+              What missed?
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                marginBottom: "10px",
+              }}
+            >
+              {reasons.map((r) => {
+                const active = reason === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setReason(active ? null : r)}
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "12px",
+                      lineHeight: 1,
+                      padding: "6px 10px",
+                      borderRadius: "999px",
+                      border: `1px solid ${active ? "var(--color-primary)" : "var(--color-divider)"}`,
+                      background: active ? "var(--color-primary)" : "transparent",
+                      color: active
+                        ? "var(--color-primary-foreground, #fff)"
+                        : "var(--color-muted-foreground)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {r}
+                  </button>
+                );
+              })}
+            </div>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value.slice(0, 500))}
+              placeholder="Anything else? (optional)"
+              maxLength={500}
+              rows={2}
+              style={{
+                width: "100%",
+                fontFamily: "var(--font-sans)",
+                fontSize: "13px",
+                padding: "8px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--color-divider)",
+                background: "transparent",
+                color: "var(--color-foreground)",
+                outline: "none",
+                resize: "none",
+                marginBottom: "8px",
+              }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px" }}>
               <button
-                key={opt.rating}
                 type="button"
-                onClick={() => handlePick(opt.rating)}
-                disabled={picked !== null}
-                aria-pressed={isPicked}
+                onClick={() => setOpen(false)}
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "12px",
-                  lineHeight: 1,
                   padding: "6px 10px",
-                  borderRadius: "999px",
-                  border: `1px solid ${isPicked ? "var(--color-primary)" : "var(--color-divider)"}`,
-                  background: isPicked ? "var(--color-primary)" : "transparent",
-                  color: isPicked
-                    ? "var(--color-primary-foreground, #fff)"
-                    : isFaded
-                      ? "var(--color-text-faint)"
-                      : "var(--color-muted-foreground)",
-                  opacity: isFaded ? 0.5 : 1,
-                  cursor: picked ? "default" : "pointer",
-                  transition: "all 150ms ease",
+                  borderRadius: "6px",
+                  border: "1px solid transparent",
+                  background: "transparent",
+                  color: "var(--color-muted-foreground)",
+                  cursor: "pointer",
                 }}
               >
-                {opt.label}
+                Skip
               </button>
-            );
-          })}
-        </div>
+              <button
+                type="button"
+                onClick={submitReason}
+                disabled={!reason && !note.trim()}
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "12px",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--color-primary)",
+                  background: "var(--color-primary)",
+                  color: "var(--color-primary-foreground, #fff)",
+                  cursor: !reason && !note.trim() ? "not-allowed" : "pointer",
+                  opacity: !reason && !note.trim() ? 0.5 : 1,
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
-
-      {showNoteField && (
-        <div style={{ display: "flex", gap: "6px", alignItems: "center", width: "100%" }}>
-
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value.slice(0, 240))}
-            placeholder="One line on what missed (optional)"
-            maxLength={240}
-            style={{
-              flex: 1,
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              padding: "8px 10px",
-              borderRadius: "6px",
-              border: "1px solid var(--color-divider)",
-              background: "transparent",
-              color: "var(--color-foreground)",
-              outline: "none",
-            }}
-          />
-          <button
-            type="button"
-            onClick={handleSendNote}
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "12px",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "1px solid var(--color-divider)",
-              background: "transparent",
-              color: "var(--color-muted-foreground)",
-              cursor: "pointer",
-            }}
-          >
-            Send
-          </button>
-        </div>
-      )}
     </div>
   );
 }
