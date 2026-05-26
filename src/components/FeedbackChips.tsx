@@ -168,25 +168,29 @@ export function FeedbackChips({
             </button>
           </PopoverTrigger>
           <PopoverContent
-            align={align === "center" ? "center" : "start"}
-            side="top"
+            align="end"
+            side="bottom"
             sideOffset={8}
-            className="w-72 p-3"
+            collisionPadding={12}
+            className="w-[280px] sm:w-[320px] p-4 rounded-xl shadow-lg"
             style={{
-              background: "var(--color-surface-2, var(--color-background))",
+              background: "var(--color-background)",
               border: "1px solid var(--color-divider)",
+              boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
             }}
           >
             <div
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: "12px",
-                color: "var(--color-muted-foreground)",
-                marginBottom: "8px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "var(--color-foreground)",
+                marginBottom: "10px",
               }}
             >
-              What missed?
+              What went wrong?
             </div>
+
             <div
               style={{
                 display: "flex",
