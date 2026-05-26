@@ -228,7 +228,7 @@ export function FeedbackChips({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value.slice(0, 500))}
-              placeholder="Anything else? (optional)"
+              placeholder="Provide additional feedback (optional)"
               maxLength={500}
               rows={2}
               style={{
