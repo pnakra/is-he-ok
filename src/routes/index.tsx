@@ -459,6 +459,7 @@ function Index() {
     setUsedFollowups(false);
     setAskedQuestions([]);
     setAnswers({});
+    setOffDomainBucket(null);
     setState("empty");
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
