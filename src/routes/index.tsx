@@ -819,6 +819,17 @@ function Index() {
             </div>
           )}
 
+          {/* Off-domain soft decline */}
+          {state === "off_domain" && (
+            <OffDomainView
+              sentence={submittedSentence}
+              bucket={offDomainBucket ?? "generic"}
+              onReset={handleReset}
+            />
+          )}
+
+
+
           {/* Output */}
           {state === "output" && analysis && (
             <article
