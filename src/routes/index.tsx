@@ -9,7 +9,9 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type AppState = "empty" | "triaging" | "followup" | "loading" | "output";
+type AppState = "empty" | "triaging" | "followup" | "loading" | "output" | "off_domain";
+
+type OffDomainBucket = "workplace" | "family" | "stranger" | "generic";
 
 interface Resource {
   label: string;
