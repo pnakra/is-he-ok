@@ -1065,7 +1065,7 @@ const OFF_DOMAIN_COPY: Record<
   family: {
     lead: "This one sounds like it came from a family member.",
     suggestion:
-      "Is he ok? is built for things said by guys you're dating, talking to, or hooking up with. Family dynamics need a different kind of read than what this tool is set up to do.",
+      "Is he ok? is built for things said by a guy in your life — dating, talking, hooking up. Family dynamics need a different kind of read than what this tool is set up to do.",
   },
   stranger: {
     lead: "This one sounds like it came from a stranger or someone in public.",
