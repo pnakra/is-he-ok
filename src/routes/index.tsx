@@ -65,7 +65,8 @@ const FOLLOWUP_QUESTIONS: Record<FollowupKey, FollowupQuestion> = {
 };
 
 interface TriageResponse {
-  status: "READY" | "NEEDS_FOLLOWUP" | "SAFETY";
+  status: "READY" | "NEEDS_FOLLOWUP" | "SAFETY" | "OFF_DOMAIN";
+  reason?: string;
   ask_pattern?: boolean;
   ask_pushback?: boolean;
   ask_freedom?: boolean;
