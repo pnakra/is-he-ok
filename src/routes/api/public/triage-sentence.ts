@@ -158,7 +158,7 @@ Examples of likely OFF_DOMAIN:
 - "guys are going to only want you for one thing" (no partner context, reads as generic commentary about men) → generic
 - "my coworker keeps interrupting me in meetings" → workplace`;
 
-export type TriageStatus = "READY" | "NEEDS_FOLLOWUP" | "SAFETY";
+export type TriageStatus = "READY" | "NEEDS_FOLLOWUP" | "SAFETY" | "OFF_DOMAIN";
 
 export interface TriageResult {
   status: TriageStatus;
@@ -224,7 +224,13 @@ function coerce(raw: unknown): TriageResult | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const status = r.status;
-  if (status !== "READY" && status !== "NEEDS_FOLLOWUP" && status !== "SAFETY") return null;
+  if (
+    status !== "READY" &&
+    status !== "NEEDS_FOLLOWUP" &&
+    status !== "SAFETY" &&
+    status !== "OFF_DOMAIN"
+  )
+    return null;
   return {
     status,
     reason: typeof r.reason === "string" ? r.reason.slice(0, 200) : "",
