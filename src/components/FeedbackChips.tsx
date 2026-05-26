@@ -278,7 +278,7 @@ export function FeedbackChips({
                   opacity: !reason && !note.trim() ? 0.5 : 1,
                 }}
               >
-                Send
+                Submit
               </button>
             </div>
           </PopoverContent>
