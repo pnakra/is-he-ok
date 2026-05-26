@@ -543,7 +543,7 @@ function Index() {
                       color: "var(--color-text-faint)",
                     }}
                   >
-                    A clearer way to make sense of one sentence.
+                    A clearer way to make sense of one sentence — from a guy you're dating, talking to, or hooking up with.
                   </p>
                 </header>
               )}
