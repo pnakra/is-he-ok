@@ -210,6 +210,7 @@ function Index() {
   const [answers, setAnswers] = useState<Partial<Record<FollowupKey, string>>>({});
 
   const [prolificId, setProlificId] = useState<string | null>(null);
+  const [offDomainBucket, setOffDomainBucket] = useState<OffDomainBucket | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
