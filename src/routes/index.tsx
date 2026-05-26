@@ -374,6 +374,17 @@ function Index() {
     const triage = await callTriage(sentence, ctx);
     track("iho_triage_result", { sessionId, status: triage.status });
 
+    if (triage.status === "OFF_DOMAIN") {
+      const allowed: OffDomainBucket[] = ["workplace", "family", "stranger", "generic"];
+      const raw = (triage.reason ?? "").trim().toLowerCase();
+      const bucket: OffDomainBucket = (allowed as string[]).includes(raw)
+        ? (raw as OffDomainBucket)
+        : "generic";
+      setOffDomainBucket(bucket);
+      setState("off_domain");
+      return;
+    }
+
     if (triage.status === "NEEDS_FOLLOWUP") {
       const asked: FollowupQuestion[] = [];
       if (triage.ask_pattern) asked.push(FOLLOWUP_QUESTIONS.pattern);
