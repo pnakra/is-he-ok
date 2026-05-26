@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicTriageSentenceRouteImport } from './routes/api/public/triage-sentence'
+import { Route as ApiPublicNotifyFeedbackRouteImport } from './routes/api/public/notify-feedback'
 import { Route as ApiPublicAnalyzeSentenceRouteImport } from './routes/api/public/analyze-sentence'
 
 const AboutRoute = AboutRouteImport.update({
@@ -29,6 +30,11 @@ const ApiPublicTriageSentenceRoute = ApiPublicTriageSentenceRouteImport.update({
   path: '/api/public/triage-sentence',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotifyFeedbackRoute = ApiPublicNotifyFeedbackRouteImport.update({
+  id: '/api/public/notify-feedback',
+  path: '/api/public/notify-feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAnalyzeSentenceRoute =
   ApiPublicAnalyzeSentenceRouteImport.update({
     id: '/api/public/analyze-sentence',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
+  '/api/public/notify-feedback': typeof ApiPublicNotifyFeedbackRoute
   '/api/public/triage-sentence': typeof ApiPublicTriageSentenceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
+  '/api/public/notify-feedback': typeof ApiPublicNotifyFeedbackRoute
   '/api/public/triage-sentence': typeof ApiPublicTriageSentenceRoute
 }
 export interface FileRoutesById {
@@ -53,6 +61,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/public/analyze-sentence': typeof ApiPublicAnalyzeSentenceRoute
+  '/api/public/notify-feedback': typeof ApiPublicNotifyFeedbackRoute
   '/api/public/triage-sentence': typeof ApiPublicTriageSentenceRoute
 }
 export interface FileRouteTypes {
@@ -61,18 +70,21 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/api/public/analyze-sentence'
+    | '/api/public/notify-feedback'
     | '/api/public/triage-sentence'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/api/public/analyze-sentence'
+    | '/api/public/notify-feedback'
     | '/api/public/triage-sentence'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/api/public/analyze-sentence'
+    | '/api/public/notify-feedback'
     | '/api/public/triage-sentence'
   fileRoutesById: FileRoutesById
 }
@@ -80,6 +92,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   ApiPublicAnalyzeSentenceRoute: typeof ApiPublicAnalyzeSentenceRoute
+  ApiPublicNotifyFeedbackRoute: typeof ApiPublicNotifyFeedbackRoute
   ApiPublicTriageSentenceRoute: typeof ApiPublicTriageSentenceRoute
 }
 
@@ -106,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTriageSentenceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notify-feedback': {
+      id: '/api/public/notify-feedback'
+      path: '/api/public/notify-feedback'
+      fullPath: '/api/public/notify-feedback'
+      preLoaderRoute: typeof ApiPublicNotifyFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/analyze-sentence': {
       id: '/api/public/analyze-sentence'
       path: '/api/public/analyze-sentence'
@@ -120,6 +140,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   ApiPublicAnalyzeSentenceRoute: ApiPublicAnalyzeSentenceRoute,
+  ApiPublicNotifyFeedbackRoute: ApiPublicNotifyFeedbackRoute,
   ApiPublicTriageSentenceRoute: ApiPublicTriageSentenceRoute,
 }
 export const routeTree = rootRouteImport
