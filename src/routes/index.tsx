@@ -1056,7 +1056,7 @@ const OFF_DOMAIN_COPY: Record<
   workplace: {
     lead: "This one sounds like it came from work — a boss, coworker, or someone in a professional setting.",
     suggestion:
-      "Is he ok? is built for things said by guys you're dating, talking to, or hooking up with. The patterns it names work differently in workplace dynamics, so we'd rather not give you a read that doesn't fit.",
+      "Is he ok? is built for things said by a guy in your life — dating, talking, hooking up. The patterns it names work differently in workplace dynamics, so we'd rather not give you a read that doesn't fit.",
     resource: {
       label: "Catalyst — workplace dynamics for women",
       url: "https://www.catalyst.org/research/",
