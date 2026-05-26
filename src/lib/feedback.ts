@@ -16,26 +16,28 @@ export interface FeedbackInput {
 
 /**
  * Record a feedback reaction. Fails silently — feedback must never break the UX.
+ * Routes through the server endpoint so we can also notify Slack with the
+ * full submission context (sentence + AI analysis) attached.
  */
 export async function logFeedback(input: FeedbackInput): Promise<void> {
   try {
     const { sessionId, component, rating, note, slot } = input;
     if (!sessionId) return;
 
-    const composedNote = [slot ? `[${slot}]` : null, note?.trim() || null]
-      .filter(Boolean)
-      .join(" ")
-      .slice(0, 1000);
-
-    await supabase.from("iho_feedback").insert({
-      session_id: sessionId,
-      component,
-      rating,
-      note: composedNote || null,
+    await fetch("/api/public/notify-feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        component,
+        rating,
+        note: note ?? null,
+        slot: slot ?? null,
+      }),
+      keepalive: true,
     });
 
     track("iho_submission_received", {
-      // Reuse a known event channel for visibility; the table is the source of truth.
       feedback_component: component,
       feedback_rating: rating,
     });
