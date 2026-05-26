@@ -1070,7 +1070,7 @@ const OFF_DOMAIN_COPY: Record<
   stranger: {
     lead: "This one sounds like it came from a stranger or someone in public.",
     suggestion:
-      "Is he ok? is built for things said by guys you're dating, talking to, or hooking up with. For street harassment or unwanted attention from strangers, the resource below is a better fit.",
+      "Is he ok? is built for things said by a guy in your life — dating, talking, hooking up. For street harassment or unwanted attention from strangers, the resource below is a better fit.",
     resource: {
       label: "Right To Be — responding to harassment",
       url: "https://righttobe.org/",
