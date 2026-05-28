@@ -218,6 +218,8 @@ interface TriageBody {
 function isSafetyFlagged(text: string): boolean {
   const h = text.toLowerCase();
   if (SAFETY_KEYWORDS.some((kw) => h.includes(kw))) return true;
+  if (THREAT_KEYWORDS.some((kw) => h.includes(kw))) return true;
+  if (RAPE_REGEX.test(h)) return true;
   if (SEX_COERCION_PHRASES.some((p) => h.includes(p))) return true;
   const hasSex = SEX_TERMS.some((t) => h.includes(t));
   if (hasSex && COERCION_PATTERNS.some((p) => h.includes(p))) return true;
