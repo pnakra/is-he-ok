@@ -29,6 +29,38 @@ const SAFETY_KEYWORDS = [
   "hurt me",
 ];
 
+// Future-tense / direct threats. Treated as physical-safety.
+const THREAT_KEYWORDS = [
+  "gonna kill",
+  "going to kill",
+  "kill you",
+  "i'll kill",
+  "ill kill",
+  "imma kill",
+  "im gonna kill",
+  "i'm gonna kill",
+  "gonna hurt you",
+  "going to hurt you",
+  "i'll hurt you",
+  "ill hurt you",
+  "im gonna hurt",
+  "i'm gonna hurt",
+  "beat you",
+  "gonna beat",
+  "going to beat",
+  "i'll beat",
+  "ill beat",
+  "break your",
+  "smash your",
+  "strangle",
+  "choke you",
+  "i'll find you",
+  "ill find you",
+  "make you pay",
+  "you'll regret",
+  "youll regret",
+];
+
 // Sex-coercion detection. We flag when a sex term co-occurs with a
 // coercion / refusal / incapacity pattern, OR when a specific phrase appears.
 // Conservative on purpose — false positives route to RAINN, which is the
@@ -78,9 +110,6 @@ const COERCION_PATTERNS = [
 ];
 
 const SEX_COERCION_PHRASES = [
-  "raped",
-  "rape me",
-  "raping",
   "assaulted me",
   "sexually assaulted",
   "non-consensual",
@@ -88,6 +117,10 @@ const SEX_COERCION_PHRASES = [
   "without my consent",
   "without consent",
 ];
+
+// Word-boundary regex catches any form of rape/raping/rapist regardless of
+// object — "rape you", "gonna rape", "he raped his ex", "rapist" all match.
+const RAPE_REGEX = /\b(rape|rapes|raped|raper|rapers|rapist|rapists|raping)\b/i;
 
 // Canned fallbacks — only used when the model call fails. The live SAFETY
 // path now runs the model with a safety addendum so the read is actually
@@ -410,11 +443,14 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
 
 function isSafetyFlagged(sentence: string, context: string | null): boolean {
   const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
-  return SAFETY_KEYWORDS.some((kw) => haystack.includes(kw));
+  if (SAFETY_KEYWORDS.some((kw) => haystack.includes(kw))) return true;
+  if (THREAT_KEYWORDS.some((kw) => haystack.includes(kw))) return true;
+  return false;
 }
 
 function isSexCoercionFlagged(sentence: string, context: string | null): boolean {
   const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
+  if (RAPE_REGEX.test(haystack)) return true;
   if (SEX_COERCION_PHRASES.some((p) => haystack.includes(p))) return true;
   const hasSex = SEX_TERMS.some((t) => haystack.includes(t));
   if (!hasSex) return false;
@@ -1003,8 +1039,12 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         // so we get a real read, then force crisis resources server-side.
         const physicalSafety = isSafetyFlagged(input.sentence, input.context);
         const sexCoercion = !physicalSafety && isSexCoercionFlagged(input.sentence, input.context);
+        // Honor the triage model's SAFETY verdict even if our keyword
+        // pre-filter misses — the model catches threats our lists don't.
+        const triageSafety = input.triageStatus === "SAFETY";
+        const safetyTriggered = physicalSafety || sexCoercion || triageSafety;
 
-        if (physicalSafety || sexCoercion) {
+        if (safetyTriggered) {
           const fallback = sexCoercion ? SEX_COERCION_RESPONSE : SAFETY_RESPONSE;
           const crisisResources = sexCoercion ? SEX_COERCION_RESOURCES : SAFETY_CRISIS_RESOURCES;
           // Crisis links stay locked, but append one situation-specific link

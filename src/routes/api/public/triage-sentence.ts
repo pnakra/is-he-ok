@@ -27,6 +27,37 @@ const SAFETY_KEYWORDS = [
   "going to hurt",
 ];
 
+const THREAT_KEYWORDS = [
+  "gonna kill",
+  "going to kill",
+  "kill you",
+  "i'll kill",
+  "ill kill",
+  "imma kill",
+  "im gonna kill",
+  "i'm gonna kill",
+  "gonna hurt you",
+  "going to hurt you",
+  "i'll hurt you",
+  "ill hurt you",
+  "im gonna hurt",
+  "i'm gonna hurt",
+  "beat you",
+  "gonna beat",
+  "going to beat",
+  "i'll beat",
+  "ill beat",
+  "break your",
+  "smash your",
+  "strangle",
+  "choke you",
+  "i'll find you",
+  "ill find you",
+  "make you pay",
+  "you'll regret",
+  "youll regret",
+];
+
 const SEX_TERMS = [
   "sex",
   "sexual",
@@ -72,9 +103,6 @@ const COERCION_PATTERNS = [
 ];
 
 const SEX_COERCION_PHRASES = [
-  "raped",
-  "rape me",
-  "raping",
   "assaulted me",
   "sexually assaulted",
   "non-consensual",
@@ -82,6 +110,8 @@ const SEX_COERCION_PHRASES = [
   "without my consent",
   "without consent",
 ];
+
+const RAPE_REGEX = /\b(rape|rapes|raped|raper|rapers|rapist|rapists|raping)\b/i;
 
 const SYSTEM_PROMPT = `You are a classifier for "Is He OK?", a tool that helps girls and young women make sense of one sentence that felt off from a guy they are dating, talking to, hooking up with, or in an intimate relationship with.
 
@@ -188,6 +218,8 @@ interface TriageBody {
 function isSafetyFlagged(text: string): boolean {
   const h = text.toLowerCase();
   if (SAFETY_KEYWORDS.some((kw) => h.includes(kw))) return true;
+  if (THREAT_KEYWORDS.some((kw) => h.includes(kw))) return true;
+  if (RAPE_REGEX.test(h)) return true;
   if (SEX_COERCION_PHRASES.some((p) => h.includes(p))) return true;
   const hasSex = SEX_TERMS.some((t) => h.includes(t));
   if (hasSex && COERCION_PATTERNS.some((p) => h.includes(p))) return true;
