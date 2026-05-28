@@ -443,11 +443,14 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
 
 function isSafetyFlagged(sentence: string, context: string | null): boolean {
   const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
-  return SAFETY_KEYWORDS.some((kw) => haystack.includes(kw));
+  if (SAFETY_KEYWORDS.some((kw) => haystack.includes(kw))) return true;
+  if (THREAT_KEYWORDS.some((kw) => haystack.includes(kw))) return true;
+  return false;
 }
 
 function isSexCoercionFlagged(sentence: string, context: string | null): boolean {
   const haystack = `${sentence}\n${context ?? ""}`.toLowerCase();
+  if (RAPE_REGEX.test(haystack)) return true;
   if (SEX_COERCION_PHRASES.some((p) => haystack.includes(p))) return true;
   const hasSex = SEX_TERMS.some((t) => haystack.includes(t));
   if (!hasSex) return false;
