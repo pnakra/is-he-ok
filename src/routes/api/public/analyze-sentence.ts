@@ -29,6 +29,38 @@ const SAFETY_KEYWORDS = [
   "hurt me",
 ];
 
+// Future-tense / direct threats. Treated as physical-safety.
+const THREAT_KEYWORDS = [
+  "gonna kill",
+  "going to kill",
+  "kill you",
+  "i'll kill",
+  "ill kill",
+  "imma kill",
+  "im gonna kill",
+  "i'm gonna kill",
+  "gonna hurt you",
+  "going to hurt you",
+  "i'll hurt you",
+  "ill hurt you",
+  "im gonna hurt",
+  "i'm gonna hurt",
+  "beat you",
+  "gonna beat",
+  "going to beat",
+  "i'll beat",
+  "ill beat",
+  "break your",
+  "smash your",
+  "strangle",
+  "choke you",
+  "i'll find you",
+  "ill find you",
+  "make you pay",
+  "you'll regret",
+  "youll regret",
+];
+
 // Sex-coercion detection. We flag when a sex term co-occurs with a
 // coercion / refusal / incapacity pattern, OR when a specific phrase appears.
 // Conservative on purpose — false positives route to RAINN, which is the
@@ -78,9 +110,6 @@ const COERCION_PATTERNS = [
 ];
 
 const SEX_COERCION_PHRASES = [
-  "raped",
-  "rape me",
-  "raping",
   "assaulted me",
   "sexually assaulted",
   "non-consensual",
@@ -88,6 +117,10 @@ const SEX_COERCION_PHRASES = [
   "without my consent",
   "without consent",
 ];
+
+// Word-boundary regex catches any form of rape/raping/rapist regardless of
+// object — "rape you", "gonna rape", "he raped his ex", "rapist" all match.
+const RAPE_REGEX = /\b(rape|rapes|raped|raper|rapers|rapist|rapists|raping)\b/i;
 
 // Canned fallbacks — only used when the model call fails. The live SAFETY
 // path now runs the model with a safety addendum so the read is actually
