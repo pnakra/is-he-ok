@@ -1039,8 +1039,12 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
         // so we get a real read, then force crisis resources server-side.
         const physicalSafety = isSafetyFlagged(input.sentence, input.context);
         const sexCoercion = !physicalSafety && isSexCoercionFlagged(input.sentence, input.context);
+        // Honor the triage model's SAFETY verdict even if our keyword
+        // pre-filter misses — the model catches threats our lists don't.
+        const triageSafety = input.triageStatus === "SAFETY";
+        const safetyTriggered = physicalSafety || sexCoercion || triageSafety;
 
-        if (physicalSafety || sexCoercion) {
+        if (safetyTriggered) {
           const fallback = sexCoercion ? SEX_COERCION_RESPONSE : SAFETY_RESPONSE;
           const crisisResources = sexCoercion ? SEX_COERCION_RESOURCES : SAFETY_CRISIS_RESOURCES;
           // Crisis links stay locked, but append one situation-specific link
