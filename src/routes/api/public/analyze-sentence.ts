@@ -926,6 +926,54 @@ function extractJsonObject(text: string): unknown | null {
   }
 }
 
+async function callAnthropicOnce(
+  apiKey: string,
+  system: string,
+  userMessage: string,
+): Promise<AnalysisPayload | null> {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      temperature: 0.4,
+      system,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    console.error("[analyze-sentence] anthropic non-ok", resp.status, text);
+    if (resp.status === 429 || resp.status === 529 || resp.status >= 500) {
+      throw new Error(`transient_${resp.status}`);
+    }
+    return null;
+  }
+
+  const json = (await resp.json()) as AnthropicResponse;
+  const textBlock = (json.content ?? []).find(
+    (b): b is AnthropicTextBlock =>
+      (b as { type?: string }).type === "text" &&
+      typeof (b as AnthropicTextBlock).text === "string",
+  );
+  if (!textBlock) {
+    console.error("[analyze-sentence] no text block in response");
+    return null;
+  }
+  const parsed = extractJsonObject(textBlock.text);
+  if (!parsed) {
+    console.error("[analyze-sentence] failed to parse JSON from response", textBlock.text.slice(0, 200));
+    return null;
+  }
+  return coercePayload(parsed);
+}
+
 async function callAnthropic(
   sentence: string,
   context: string | null,
@@ -948,51 +996,20 @@ async function callAnthropic(
   if (followups.safety) lines.push(`safety_answer: ${followups.safety}`);
   const userMessage = lines.join("\n");
 
-  try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        temperature: 0.4,
-        system,
-        messages: [{ role: "user", content: userMessage }],
-      }),
-    });
-
-
-
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      console.error("[analyze-sentence] anthropic non-ok", resp.status, text);
-      return null;
+  // Retry once on transient upstream failures — the main cause of the
+  // user-facing "something went wrong" fallback is a network blip or a
+  // 5xx/429/529 from Anthropic, not a real logic error.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await callAnthropicOnce(apiKey, system, userMessage);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[analyze-sentence] anthropic threw (attempt ${attempt + 1})`, msg);
+      if (attempt === 1) return null;
+      await new Promise((r) => setTimeout(r, 400));
     }
-
-    const json = (await resp.json()) as AnthropicResponse;
-    const textBlock = (json.content ?? []).find(
-      (b): b is AnthropicTextBlock =>
-        (b as { type?: string }).type === "text" &&
-        typeof (b as AnthropicTextBlock).text === "string",
-    );
-    if (!textBlock) {
-      console.error("[analyze-sentence] no text block in response");
-      return null;
-    }
-    const parsed = extractJsonObject(textBlock.text);
-    if (!parsed) {
-      console.error("[analyze-sentence] failed to parse JSON from response", textBlock.text.slice(0, 200));
-      return null;
-    }
-    return coercePayload(parsed);
-  } catch (err) {
-    console.error("[analyze-sentence] anthropic threw", err);
-    return null;
   }
+  return null;
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
