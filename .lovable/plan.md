@@ -1,55 +1,103 @@
-# Fix: "i'm gonna rape you in your sleep" was not flagged as safety
+# Storyboard — "Is He Ok?" product/demo walkthrough
 
-## What actually happened
+A single Remotion video (1920×1080, 30fps, ~90s) that walks through the product with on-screen captions and callout boxes explaining what's happening and *why*. Three back-to-back user scenarios (no-context, with-context, safety-flagged) so viewers see the range of behavior.
 
-The triage model **did** correctly classify the sentence as `SAFETY` (the DB shows `triage_status = 'SAFETY'`). But the analyze endpoint computes its *own* safety verdict from a keyword pre-filter and **ignores the triage verdict the client passes in**. Its keyword list has gaps, so the response came back in the normal "read the sentence" tone instead of the safety branch with crisis resources, and the row was stored with `safety_flagged = false`.
+Style matches the existing Remotion project (warm cream palette, serif accents, browser chrome, animated cursor) so it slots alongside the other scenes. Captions are lower-third cards; callouts are floating boxes with a thin connector line to the UI element they describe.
 
-There are two independent bugs here. We fix both.
+---
 
-## Bug 1 — keyword list misses obvious threats
+## Act 1 — What this is (≈10s)
 
-In `src/routes/api/public/analyze-sentence.ts` (and the mirrored list in `src/routes/api/public/triage-sentence.ts`):
+**Scene A · Title + one-liner (5s)**
+- Serif "Is He Ok?" mark, subtitle: *"A sentence-level anti-coercion tool for girls."*
+- Kicker: *"90-second product walkthrough."*
 
-- `SEX_COERCION_PHRASES` matches `raped`, `rape me`, `raping` — but **not** `rape you`, `gonna rape`, or the bare verb `rape`. So "i'm gonna rape you in your sleep" slipped through.
-- `SAFETY_KEYWORDS` has no future-tense violent threats (`gonna kill`, `kill you`, `i'll hurt you`, `beat you up`, etc.) — only descriptive past-tense ("hit me", "choked", "threatened").
+**Scene B · The premise (5s)**
+- Split card: left = "One sentence he said" (quote bubble). Right = "What it actually did to you" (analysis card preview).
+- Caption: *"Girls 16–24 often can't name manipulation in the moment. This tool reads one sentence and names the pattern."*
 
-Fix: broaden both lists. Per the existing comment ("Conservative on purpose — false positives route to RAINN, which is the right place"), it's acceptable to be more aggressive.
+---
 
-Add to the sex-violence bucket:
-- Any standalone `rape` / `raping` / `rapes` / `rapist` (word-boundary regex `\brape(s|d|r|rs|ist)?\b` and `\braping\b`). This catches "rape you", "gonna rape", "he raped his ex", etc.
+## Act 2 — Scenario 1: no context (≈20s)
 
-Add a new `THREAT_KEYWORDS` bucket (treated as physical-safety):
-- `gonna kill`, `going to kill`, `kill you`, `i'll kill`, `ill kill`
-- `gonna hurt you`, `going to hurt you`, `i'll hurt you`, `ill hurt you`
-- `beat you`, `gonna beat`, `going to beat`, `i'll beat`
-- `break your`, `smash your`, `strangle`, `choke you`
-- `i'll find you`, `ill find you` (stalking-style threats)
-- `make you pay`, `you'll regret`, `youll regret`
+**Scene C · Landing + suggestion chip**
+- Cursor lands on homepage, hovers a suggestion chip ("You're too sensitive"), clicks it.
+- **Callout on textarea:** *"Suggestion chips = zero-friction start. Chips disappear once text is in the box."*
+- **Callout on 'Add context':** *"Optional. Most first-time users skip it."*
+- Cursor clicks "Read the sentence."
 
-Keep the existing keyword arrays for descriptive past-tense incidents.
+**Scene D · Result (no context)**
+- Three analysis cards render: *How it came across / What it did to you / What may be going on.*
+- **Callout:** *"Three angles, never a verdict. Voice rules: hedged, specific, user is the expert."*
+- **Callout on resources:** *"2–3 links, picked by regex-matched situation (gaslighting bank here). All verified, no dead links."*
+- Feedback thumbs briefly highlighted. **Callout:** *"Per-card 👍/👎. 👎 opens a popover for reasons — logged to Slack."*
 
-## Bug 2 — analyze ignores the triage verdict
+---
 
-The client already calls `/api/public/triage-sentence` first and the model there caught this sentence as `SAFETY`. The client passes `triageStatus: "SAFETY"` to `/api/public/analyze-sentence`, but the POST handler never reads it as a trigger — it only re-runs its own keyword filter.
+## Act 3 — Scenario 2: with context (≈20s)
 
-Fix: in the analyze POST handler, treat `input.triageStatus === "SAFETY"` as a hard override that routes into the safety branch (alongside `physicalSafety || sexCoercion`). This makes the model's nuanced verdict authoritative when our keywords miss. Decide whether to route it as physical-safety or sex-coercion based on which keyword bucket (if any) matches; default to physical-safety crisis resources (`thehotline.org`, `womenslaw.org`) when neither matches but triage said SAFETY — these are the most general-purpose for violent threats.
+**Scene E · Typing a real sentence + context**
+- Cursor clears input, types: *"he said i owe him for dinner"* and opens "Add context": *"we've only been on 2 dates."*
+- **Callout:** *"Context sharpens the read — the model uses it to name the specific tactic."*
 
-## Bug 3 (one-time) — backfill the existing row
+**Scene F · Result (financial/coercive framing)**
+- Cards render; third resource link is financial-abuse specific.
+- **Callout on 3rd resource:** *"Situation detector matched 'owe / money' → surfaced a targeted resource on top of the two tactic links."*
+- **Callout on tone:** *"No questions in the output — statements only, so the user never feels like the tool expects a reply."*
 
-Update the offending row (`id = 003a3499-...`) to `safety_flagged = true`. This is a single UPDATE so it needs a migration. We leave the stored `analysis` text as-is (it's a historical record of what the user actually saw), but flip the flag so the row shows up correctly in `/admin` filters and any safety review.
+---
 
-## Files changed
+## Act 4 — Scenario 3: safety flag (≈20s)
 
-- `src/routes/api/public/analyze-sentence.ts` — broaden keyword lists, add `THREAT_KEYWORDS`, switch matchers to regex where needed, honor `triageStatus === "SAFETY"` as a safety-branch trigger.
-- `src/routes/api/public/triage-sentence.ts` — mirror the keyword/regex updates so the hard pre-filter also catches these before the model.
-- Migration — backfill `iho_submissions.safety_flagged = true` for that one row.
+**Scene G · Safety input**
+- Cursor types a threat-style sentence (softened stand-in, e.g. *"he said he'd hurt me if i left"*).
+- **Callout:** *"Two-stage pipeline: Triage classifies first. SAFETY status hard-overrides the analysis branch."*
 
-## Out of scope
+**Scene H · Safety result**
+- Result view shows the analysis (naming minimization/threat), but resources are locked to crisis lines (loveisrespect, 988, RAINN as relevant).
+- **Callout:** *"Regex + keyword pre-filter + model triage. Even if one misses, the other catches. Backfilled real prod misses (e.g. future-tense threats)."*
+- **Callout on footer:** *"'If you're in immediate danger…' line always visible in safety mode."*
 
-- Not changing the safety-branch copy or the crisis resource list.
-- Not changing the model prompts (triage already got this right; the system prompt for analyze doesn't need changes since the safety addendum is solid — it just wasn't being triggered).
-- Not adding a Slack alert tier for safety hits — separate decision worth its own conversation.
+---
 
-## How we verify
+## Act 5 — Why the resources (≈10s)
 
-After implementing, run the analyze endpoint locally with the exact offending sentence plus a few close variants (`"i'll kill you"`, `"gonna beat you up"`, `"he raped his ex"`) and confirm each routes into the safety branch with crisis resources. Check the DB row for the test submission has `safety_flagged = true`.
+**Scene I · Resource philosophy card**
+- Static-ish card with 3 bullets, each with a small callout:
+  - *"30 verified deep links, not homepages."*
+  - *"Mapped to tactic labels (DARVO, minimization, weaponized concern, financial, sexual coercion)."*
+  - *"Situation detector adds a 3rd contextual link when keywords match."*
+
+---
+
+## Act 6 — Close (≈5s)
+
+**Scene J · Outro**
+- Serif "is he ok?" wordmark. Line: *"Private. Anonymous. No account."*
+- Small footer: *"Override Labs · Young Futures — Girl on Fire."*
+
+---
+
+## Captions & callouts — visual system
+
+- **Lower-third caption bar:** warm cream card, serif italic label + sans body, fades in/out with each beat. Used for narrator-style commentary.
+- **Callout box:** rounded rectangle (border `COLORS.border`, bg `COLORS.surface`), 18–20px sans copy, small serif label ("WHY", "HOW", "SAFETY"), thin connector line pointing to the UI element it explains.
+- **Highlight ring:** soft `COLORS.accentSoft` glow around the element being called out.
+- Cursor + click ripples reused from existing `Shared.tsx`.
+
+## Technical plan
+
+- New Remotion composition `walkthrough` (kept separate from existing `main` so nothing else changes).
+- Files: `remotion/src/Walkthrough.tsx` (composition wrapper) + `remotion/src/scenes/walkthrough/Scene{A–J}.tsx` + `remotion/src/components/Callout.tsx` + `remotion/src/components/CaptionBar.tsx`.
+- Registered in `Root.tsx` as a second `<Composition id="walkthrough" …>` — the existing `main` video stays untouched.
+- Rendered via existing `scripts/render-remotion.mjs` (parameterized to accept comp id) to `/mnt/documents/is-he-ok-walkthrough.mp4`.
+- All animation frame-based (`useCurrentFrame` + `interpolate`/`spring`), following the project's existing patterns.
+
+---
+
+## Open questions before I build
+
+1. Total length target — **~90s** as above, or do you want a shorter (~60s) cut for social vs a longer (~2min) for demo day?
+2. Voiceover or text-only? Current plan is silent + captions (matches existing videos). ElevenLabs VO is possible if you want it.
+3. Safety scenario wording — I'll use a softened stand-in like *"he said he'd hurt me if i left."* OK, or want me to use a real anonymized submission from the DB?
+4. Any callouts you want *added* (e.g. session_id/visitor tracking, admin dashboard) or *removed*?
