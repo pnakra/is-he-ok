@@ -33,20 +33,20 @@ export const CaptionBar: React.FC<{
     <div
       style={{
         position: "absolute",
-        bottom: 80,
+        top: 44,
         left: "50%",
-        transform: `translate(-50%, ${y}px)`,
+        transform: `translate(-50%, ${-y}px)`,
         opacity,
-        maxWidth: 1400,
-        width: "80%",
-        backgroundColor: "rgba(31,26,23,0.92)",
+        maxWidth: 1600,
+        width: "84%",
+        backgroundColor: "rgba(31,26,23,0.94)",
         color: "#F7F3EE",
-        padding: "22px 34px",
+        padding: "20px 34px",
         borderRadius: 14,
-        boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+        boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
         display: "flex",
         gap: 22,
-        alignItems: "flex-start",
+        alignItems: "center",
         zIndex: 2000,
       }}
     >
@@ -59,7 +59,7 @@ export const CaptionBar: React.FC<{
             color: COLORS.accentSoft,
             letterSpacing: "0.02em",
             flexShrink: 0,
-            paddingTop: 4,
+            whiteSpace: "nowrap",
           }}
         >
           {label}
@@ -68,8 +68,8 @@ export const CaptionBar: React.FC<{
       <div
         style={{
           fontFamily: SANS,
-          fontSize: 26,
-          lineHeight: 1.4,
+          fontSize: 24,
+          lineHeight: 1.35,
           fontWeight: 400,
         }}
       >
