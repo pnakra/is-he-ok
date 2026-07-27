@@ -955,6 +955,21 @@ function Index() {
 
               <OverallFeedback sessionId={getSessionId()} />
 
+              <div
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center"
+                style={{ marginTop: "32px" }}
+              >
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center bg-primary px-6 py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[var(--color-accent-hover)] sm:w-auto"
+                  style={{ fontFamily: "var(--font-sans)", borderRadius: "10px" }}
+                >
+                  Read another one
+                </button>
+                <CopyRead analysis={analysis} />
+              </div>
+
               <div style={{ marginTop: "48px" }}>
                 <div className="h-px w-full" style={{ backgroundColor: "var(--color-divider)" }} />
                 <div className="pt-5 text-center">
