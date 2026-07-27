@@ -1022,6 +1022,48 @@ function Index() {
   );
 }
 
+function CopyRead({ analysis }: { analysis: Analysis }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = [
+      analysis.wearing,
+      analysis.did,
+      analysis.tactic,
+      analysis.closing,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      track("iho_read_copied", {});
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked — fail quietly.
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex min-h-[48px] w-full items-center justify-center px-6 py-3 text-[15px] transition-colors hover:bg-[var(--color-surface-2)] sm:w-auto"
+      style={{
+        fontFamily: "var(--font-sans)",
+        borderRadius: "10px",
+        border: "1px solid var(--color-border)",
+        background: "transparent",
+        color: "var(--color-foreground)",
+        cursor: "pointer",
+      }}
+      aria-live="polite"
+    >
+      {copied ? "Copied" : "Copy this read"}
+    </button>
+  );
+}
+
 function OverallFeedback({ sessionId }: { sessionId: string }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
