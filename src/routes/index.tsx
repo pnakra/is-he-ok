@@ -973,23 +973,6 @@ function Index() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center" style={{ marginTop: "24px" }}>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-[14px] hover:text-foreground hover:underline"
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    color: "var(--color-muted-foreground)",
-                    textUnderlineOffset: "3px",
-                    background: "transparent",
-                    border: 0,
-                    cursor: "pointer",
-                  }}
-                >
-                  Read another one
-                </button>
-              </div>
             </article>
           )}
         </section>
