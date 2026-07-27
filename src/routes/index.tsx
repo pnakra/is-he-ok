@@ -923,6 +923,12 @@ function Index() {
                   >
                     If you want to read further
                   </h2>
+                  <p
+                    className="mt-1 text-[13px] leading-[1.5]"
+                    style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
+                  >
+                    Picked for what showed up in this sentence — not a general list.
+                  </p>
                   <ul className="mt-3 flex flex-col gap-2">
                     {analysis.resources.map((r) => (
                       <li key={r.url}>
