@@ -543,7 +543,7 @@ function Index() {
                       color: "var(--color-text-faint)",
                     }}
                   >
-                    A clearer way to make sense of one sentence — from a guy in your life: dating, talking, hooking up.
+                    A clearer way to make sense of one sentence that didn&rsquo;t sit right.
                   </p>
                 </header>
               )}
@@ -923,6 +923,12 @@ function Index() {
                   >
                     If you want to read further
                   </h2>
+                  <p
+                    className="mt-1 text-[13px] leading-[1.5]"
+                    style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-faint)" }}
+                  >
+                    Picked for what showed up in this sentence — not a general list.
+                  </p>
                   <ul className="mt-3 flex flex-col gap-2">
                     {analysis.resources.map((r) => (
                       <li key={r.url}>
@@ -955,6 +961,21 @@ function Index() {
 
               <OverallFeedback sessionId={getSessionId()} />
 
+              <div
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center"
+                style={{ marginTop: "32px" }}
+              >
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center bg-primary px-6 py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-[var(--color-accent-hover)] sm:w-auto"
+                  style={{ fontFamily: "var(--font-sans)", borderRadius: "10px" }}
+                >
+                  Read another one
+                </button>
+                <CopyRead analysis={analysis} />
+              </div>
+
               <div style={{ marginTop: "48px" }}>
                 <div className="h-px w-full" style={{ backgroundColor: "var(--color-divider)" }} />
                 <div className="pt-5 text-center">
@@ -973,23 +994,6 @@ function Index() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center" style={{ marginTop: "24px" }}>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-[14px] hover:text-foreground hover:underline"
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    color: "var(--color-muted-foreground)",
-                    textUnderlineOffset: "3px",
-                    background: "transparent",
-                    border: 0,
-                    cursor: "pointer",
-                  }}
-                >
-                  Read another one
-                </button>
-              </div>
             </article>
           )}
         </section>
@@ -1015,6 +1019,48 @@ function Index() {
         )}
       </div>
     </main>
+  );
+}
+
+function CopyRead({ analysis }: { analysis: Analysis }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = [
+      analysis.wearing,
+      analysis.did,
+      analysis.tactic,
+      analysis.closing,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      track("iho_read_copied", {});
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked — fail quietly.
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex min-h-[48px] w-full items-center justify-center px-6 py-3 text-[15px] transition-colors hover:bg-[var(--color-surface-2)] sm:w-auto"
+      style={{
+        fontFamily: "var(--font-sans)",
+        borderRadius: "10px",
+        border: "1px solid var(--color-border)",
+        background: "transparent",
+        color: "var(--color-foreground)",
+        cursor: "pointer",
+      }}
+      aria-live="polite"
+    >
+      {copied ? "Copied" : "Copy this read"}
+    </button>
   );
 }
 

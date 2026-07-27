@@ -18,6 +18,7 @@ type EventName =
   | "iho_submission_failed"
   | "iho_safety_flagged"
   | "iho_share_clicked"
+  | "iho_read_copied"
   | "iho_reset_clicked"
   | "iho_triage_result";
 
