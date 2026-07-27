@@ -171,6 +171,85 @@ function AboutPage() {
 
         <Divider />
 
+        <section className="space-y-4">
+          <H2>What it's built on</H2>
+          <P>
+            This tool synthesizes frameworks from researchers, advocates, and clinicians whose
+            work shaped how we read a single sentence for control.
+          </P>
+          <ul className="space-y-4" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            <li>
+              <P>
+                <span className="text-foreground" style={{ fontWeight: 500 }}>
+                  Lindsay Stoker
+                </span>{" "}
+                —{" "}
+                <em className="text-foreground not-italic" style={{ fontStyle: "normal" }}>
+                  The Control Code: Reclaiming Cognitive Sovereignty After Coercive Control
+                </em>{" "}
+                (2026). The four-lens analysis this tool uses — what a sentence is wearing, what
+                it does, who holds authority after it lands, and whether your agency was preserved
+                — is grounded in Stoker's work. We have sought to collaborate with her directly.
+              </P>
+            </li>
+            <li>
+              <P>
+                <span className="text-foreground" style={{ fontWeight: 500 }}>
+                  Lundy Bancroft
+                </span>{" "}
+                —{" "}
+                <em className="text-foreground not-italic" style={{ fontStyle: "normal" }}>
+                  Why Does He Do That?
+                </em>{" "}
+                (2002). The understanding that control is rooted in entitlement, not pathology,
+                and that intent does not determine impact.
+              </P>
+            </li>
+            <li>
+              <P>
+                <span className="text-foreground" style={{ fontWeight: 500 }}>
+                  Evan Stark
+                </span>{" "}
+                —{" "}
+                <em className="text-foreground not-italic" style={{ fontStyle: "normal" }}>
+                  Coercive Control
+                </em>{" "}
+                (2007). The framework that maps control as a structural pattern of liberty
+                deprivation rather than a collection of individual incidents.
+              </P>
+            </li>
+            <li>
+              <P>
+                <span className="text-foreground" style={{ fontWeight: 500 }}>
+                  Torna Pitman
+                </span>{" "}
+                — educator and advocate whose work on the stages of coercive control informs how
+                this tool calibrates what it's seeing.
+              </P>
+            </li>
+            <li>
+              <P>
+                <span className="text-foreground" style={{ fontWeight: 500 }}>
+                  Jacquelyn Campbell
+                </span>{" "}
+                — whose Danger Assessment research established that coercive control is a
+                stronger predictor of intimate partner homicide than prior physical violence.
+              </P>
+            </li>
+            <li>
+              <P>
+                <span className="text-foreground" style={{ fontWeight: 500 }}>
+                  Jane Monckton Smith
+                </span>{" "}
+                — whose eight-stage homicide timeline maps coercive control to lethality
+                progression.
+              </P>
+            </li>
+          </ul>
+        </section>
+
+        <Divider />
+
         <section className="pb-12 space-y-4">
           <H2>Who made this</H2>
           <P muted>
