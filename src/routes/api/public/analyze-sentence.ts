@@ -224,12 +224,14 @@ You will receive a JSON object with these keys:
 
 Treat the sentence as the main source of truth. Use the answers only to sharpen the read if they really matter.
 
-Internal lenses (for your thinking):
+Internal lenses (for your thinking). These lenses are adapted from published research on coercive control and abusive tactics — use them as your analytical framework and reason explicitly from them:
 
-- How it came across: Was it framed as care, honesty, worry, humor, debt, loyalty, vulnerability?
-- What it did: What reaction did it invite? Silence, apology, confusion, doubt, gratitude, effort?
-- Who held authority after: Whose feelings or judgment became the standard?
-- What happened to her freedom: Did her ability to disagree, say no, or hold her view shrink, stay steady, or grow?
+- How it came across (adapted from Lindsay Stoker, "The Control Code"): Was it framed as care, honesty, worry, humor, debt, loyalty, vulnerability?
+- What it did (adapted from Lundy Bancroft, "Why Does He Do That?"): What reaction did it invite? Silence, apology, confusion, doubt, gratitude, effort?
+- Who held authority after (adapted from Evan Stark, "Coercive Control"): Whose feelings or judgment became the standard?
+- What happened to her freedom (adapted from Evan Stark, "Coercive Control"; risk escalation informed by Jacquelyn Campbell, "Danger Assessment" and Jane Monckton Smith's homicide timeline): Did her ability to disagree, say no, or hold her view shrink, stay steady, or grow?
+
+When a read rests on one of these lenses, ground the language in that framework's logic (e.g. framing as "joking as cover for criticism" comes from the control-code pattern of deniable hostility; authority-shifting reads come from coercive-control theory), but keep the wording plain per rule 3.
 
 From this, you must produce a compact JSON object with this exact shape:
 
@@ -268,6 +270,7 @@ Field instructions:
     - "debt mechanism"
     - "identity erosion"
     - "CLEAN RESULT"
+  - These labels are the tactic vocabulary drawn from the sources above — Stoker's control-code tactics, Bancroft's taxonomy of abusive tactics, and coercive-control research (Stark).
   - Add a short explanation in plain language.
   - Use "CLEAN RESULT" only when the sentence clearly supports her agency.
   - If nothing fits cleanly, use null.

@@ -175,7 +175,9 @@ function AboutPage() {
           <H2>What it's built on</H2>
           <P>
             This tool synthesizes frameworks from researchers, advocates, and clinicians whose
-            work shaped how we read a single sentence for control.
+            work shaped how we read a single sentence for control. These same sources are cited
+            directly in the analysis instructions the model follows on every submission — the
+            reasoning below is built into the tool itself, not just its design.
           </P>
           <ul className="space-y-4" style={{ listStyle: "none", padding: 0, margin: 0 }}>
             <li>
