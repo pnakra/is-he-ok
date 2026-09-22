@@ -270,6 +270,7 @@ Field instructions:
     - "debt mechanism"
     - "identity erosion"
     - "CLEAN RESULT"
+  - These labels are the tactic vocabulary drawn from the sources above — Stoker's control-code tactics, Bancroft's taxonomy of abusive tactics, and coercive-control research (Stark).
   - Add a short explanation in plain language.
   - Use "CLEAN RESULT" only when the sentence clearly supports her agency.
   - If nothing fits cleanly, use null.
