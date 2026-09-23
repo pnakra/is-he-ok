@@ -1064,7 +1064,13 @@ function SaveAsImage({ hisSentence, read }: { hisSentence: string; read: string 
         /* ignore */
       }
       const node = cardRef.current!;
-      const opts = { width: 1080, height: 1350, pixelRatio: 1, cacheBust: true };
+      const opts = {
+        width: 1080,
+        height: 1350,
+        pixelRatio: 1,
+        cacheBust: true,
+        style: { position: "static", left: "0", top: "0", transform: "none" },
+      };
       let url: string | null = null;
       try {
         url = await toPng(node, opts);
