@@ -20,7 +20,9 @@ type EventName =
   | "iho_share_clicked"
   | "iho_read_copied"
   | "iho_reset_clicked"
-  | "iho_triage_result";
+  | "iho_triage_result"
+  | "iho_card_opened"
+  | "iho_card_saved";
 
 type EventProps = Record<string, string | number | boolean>;
 
