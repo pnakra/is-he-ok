@@ -4,6 +4,9 @@ import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { FeedbackChips } from "@/components/FeedbackChips";
 import { logResourceClick } from "@/lib/feedback";
+import { ShareCard } from "@/components/ShareCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -974,6 +977,18 @@ function Index() {
                   Read another one
                 </button>
                 <CopyRead analysis={analysis} />
+                {(() => {
+                  if (
+                    analysis.safetyFlagged ||
+                    analysis.wearing === FAILURE_TEXT ||
+                    usedFollowups ||
+                    optionalContext.trim() !== "" ||
+                    !submittedSentence
+                  )
+                    return null;
+                  const read = getCardRead(analysis.wearing);
+                  return read ? <SaveAsImage hisSentence={submittedSentence} read={read} /> : null;
+                })()}
               </div>
 
               <div style={{ marginTop: "48px" }}>
@@ -1019,6 +1034,161 @@ function Index() {
         )}
       </div>
     </main>
+  );
+}
+
+function getCardRead(wearing: string): string | null {
+  const w = wearing.trim();
+  if (w.length <= 240) return w;
+  const m = w.match(/^.*?[.!?](?=\s|$)/s);
+  if (!m) return null;
+  const first = m[0].trim();
+  return first.length <= 240 ? first : null;
+}
+
+function SaveAsImage({ hisSentence, read }: { hisSentence: string; read: string }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [rendering, setRendering] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!rendering || !cardRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const { toPng } = await import("html-to-image");
+      try {
+        await document.fonts.ready;
+      } catch {
+        /* ignore */
+      }
+      const node = cardRef.current!;
+      const opts = { width: 1080, height: 1350, pixelRatio: 1, cacheBust: true };
+      let url: string | null = null;
+      try {
+        url = await toPng(node, opts);
+      } catch {
+        try {
+          url = await toPng(node, { ...opts, skipFonts: true });
+        } catch {
+          url = null;
+        }
+      }
+      if (cancelled) return;
+      setRendering(false);
+      if (url) {
+        setDataUrl(url);
+        setNote(null);
+        setOpen(true);
+        track("iho_card_opened", { sessionId: getSessionId() });
+      } else {
+        toast("Couldn't make the image. Try again.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [rendering]);
+
+  const handleSave = async () => {
+    if (!dataUrl) return;
+    const sessionId = getSessionId();
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], "is-he-ok.png", { type: "image/png" });
+    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      try {
+        await nav.share({ files: [file] });
+        track("iho_card_saved", { sessionId, method: "share" });
+        toast("Saved");
+        setOpen(false);
+        return;
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError") return;
+      }
+    }
+    try {
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = "is-he-ok.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+      track("iho_card_saved", { sessionId, method: "download" });
+      toast("Saved");
+      setOpen(false);
+      return;
+    } catch {
+      /* fall through */
+    }
+    const w = window.open();
+    if (w) {
+      w.document.write(`<img src="${dataUrl}" style="max-width:100%" alt="is he ok? card" />`);
+      track("iho_card_saved", { sessionId, method: "newtab" });
+    }
+    setNote("Press and hold the image to save it.");
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => !rendering && setRendering(true)}
+        disabled={rendering}
+        className="inline-flex min-h-[48px] w-full items-center justify-center px-6 py-3 text-[15px] transition-colors hover:bg-[var(--color-surface-2)] sm:w-auto"
+        style={{
+          fontFamily: "var(--font-sans)",
+          borderRadius: "10px",
+          border: "1px solid var(--color-border)",
+          background: "transparent",
+          color: "var(--color-foreground)",
+          cursor: "pointer",
+        }}
+      >
+        {rendering ? "Making image…" : "Save as image"}
+      </button>
+      {rendering && <ShareCard ref={cardRef} hisSentence={hisSentence} read={read} />}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Save as image</DialogTitle>
+          </DialogHeader>
+          {dataUrl && (
+            <img
+              src={dataUrl}
+              alt="Card with his words and how it came across"
+              className="w-full rounded-md border"
+              style={{ maxHeight: "55vh", objectFit: "contain" }}
+            />
+          )}
+          <p className="text-[14px] text-muted-foreground">
+            This card only has his words and how it came across. Nothing else you typed.
+          </p>
+          {note && <p className="text-[14px] text-foreground">{note}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="min-h-[44px] flex-1 bg-primary px-4 text-[15px] font-medium text-primary-foreground hover:bg-[var(--color-accent-hover)]"
+              style={{ borderRadius: "10px" }}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="min-h-[44px] flex-1 border px-4 text-[15px] hover:bg-[var(--color-surface-2)]"
+              style={{ borderRadius: "10px" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
