@@ -15,7 +15,16 @@ export const Route = createFileRoute("/about")({
         content:
           "A small tool for reading one sentence a little more clearly. What it is, what it isn't, and how to use it.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://he.isthisok.app/about" },
+      { name: "twitter:title", content: "About — is he ok?" },
+      {
+        name: "twitter:description",
+        content:
+          "A small tool for reading one sentence a little more clearly. What it is, what it isn't, and how to use it.",
+      },
     ],
+    links: [{ rel: "canonical", href: "https://he.isthisok.app/about" }],
   }),
   component: AboutPage,
 });

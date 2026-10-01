@@ -30,18 +30,34 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "is he ok?" },
+      { title: "is he ok? — Make sense of something he said" },
       { name: "description", content: "Type something he said. Find out what it did to you. Private. Anonymous. No account." },
       { name: "author", content: "Override Labs" },
-      { property: "og:title", content: "is he ok?" },
-      { property: "og:description", content: "Type something he said. Find out what it did to you. Private. Anonymous. No account." },
+      { property: "og:site_name", content: "is he ok?" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "is he ok?" },
-      { name: "twitter:description", content: "Type something he said. Find out what it did to you. Private. Anonymous. No account." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83e0bb6f-4e24-432b-9b76-ff198ac79bd0/id-preview-8b83f213--d60565a0-f693-4654-96b5-9dd191e1785e.lovable.app-1777539311300.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83e0bb6f-4e24-432b-9b76-ff198ac79bd0/id-preview-8b83f213--d60565a0-f693-4654-96b5-9dd191e1785e.lovable.app-1777539311300.png" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              name: "is he ok?",
+              url: "https://he.isthisok.app/",
+              publisher: { "@type": "Organization", name: "Override Labs" },
+            },
+            {
+              "@type": "Organization",
+              name: "Override Labs",
+              url: "https://he.isthisok.app/",
+              email: "overridelabspreventiontech@gmail.com",
+            },
+          ],
+        }),
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

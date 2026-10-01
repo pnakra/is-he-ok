@@ -1,0 +1,10 @@
+# is he ok?
+
+> A private, anonymous tool for making sense of one thing he said. Paste a sentence, optionally add context, and get a short read of what it may have meant and how it may have landed.
+
+Built by Override Labs for young women navigating dating, talking, and hooking up. Responses are interpretive, not definitive, and draw on research on coercive control (Lindsay Stoker, Lundy Bancroft, Evan Stark, Jacquelyn Campbell, Jane Monckton Smith). No account, name, or email required.
+
+## Pages
+
+- [Home](https://he.isthisok.app/): Type something he said and get a read on it.
+- [About](https://he.isthisok.app/about): What the tool is, privacy, safety resources, and sources it's built on.
