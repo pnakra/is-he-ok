@@ -8,7 +8,29 @@ import { ShareCard } from "@/components/ShareCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+const HOME_TITLE = "is he ok? — Make sense of something he said";
+const HOME_DESC =
+  "Type something he said. Find out what it did to you. Private. Anonymous. No account.";
+const HOME_IMAGE =
+  "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83e0bb6f-4e24-432b-9b76-ff198ac79bd0/id-preview-8b83f213--d60565a0-f693-4654-96b5-9dd191e1785e.lovable.app-1777539311300.png";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: HOME_TITLE },
+      { name: "description", content: HOME_DESC },
+      { property: "og:title", content: HOME_TITLE },
+      { property: "og:description", content: HOME_DESC },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://he.isthisok.app/" },
+      { property: "og:image", content: HOME_IMAGE },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: HOME_TITLE },
+      { name: "twitter:description", content: HOME_DESC },
+      { name: "twitter:image", content: HOME_IMAGE },
+    ],
+    links: [{ rel: "canonical", href: "https://he.isthisok.app/" }],
+  }),
   component: Index,
 });
 
@@ -515,6 +537,7 @@ function Index() {
               : "flex flex-1 flex-col py-10"
           }
         >
+          <h1 className="sr-only">is he ok? — A clearer way to make sense of one sentence</h1>
           {(state === "empty" || state === "triaging") && (
             <div
               className={
@@ -525,7 +548,7 @@ function Index() {
             >
               {state === "empty" && (
                 <header className="mb-8">
-                  <h1
+                  <h2
                     className="text-foreground"
                     style={{
                       fontFamily: "var(--font-sans)",
@@ -536,7 +559,7 @@ function Index() {
                     }}
                   >
                     Tell us what he said.
-                  </h1>
+                  </h2>
                   <p
                     className="mt-2"
                     style={{
