@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { captureAttribution, getAttribution } from "@/lib/attribution";
 import { FeedbackChips } from "@/components/FeedbackChips";
 import { logResourceClick } from "@/lib/feedback";
 import { ShareCard } from "@/components/ShareCard";
@@ -239,6 +240,7 @@ function Index() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    captureAttribution();
     try {
       const params = new URLSearchParams(window.location.search);
       const raw = params.get("prolific_id") ?? params.get("PROLIFIC_PID");
