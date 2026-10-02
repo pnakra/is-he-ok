@@ -326,6 +326,8 @@ function Index() {
           followups,
           triageStatus,
           prolificId,
+          attribution: getAttribution(),
+          entryMethod,
         }),
         signal: controller.signal,
       });
@@ -434,6 +436,11 @@ function Index() {
     await analyzeAndShow(sentence, ctx, {}, triage.status, false);
   }
 
+  function currentEntryMethod(): string {
+    if (chipUsed === null) return "typed";
+    return said.trim() === chipUsed ? "chip_unedited" : "chip_edited";
+  }
+
   async function analyzeAndShow(
     sentence: string,
     ctx: string | null,
@@ -444,7 +451,7 @@ function Index() {
     setUsedFollowups(used);
     setState("loading");
     try {
-      const result = await callAnalyze(sentence, ctx, followups, triageStatus);
+      const result = await callAnalyze(sentence, ctx, followups, triageStatus, currentEntryMethod());
       setAnalysis(result);
       setState("output");
     } catch {
