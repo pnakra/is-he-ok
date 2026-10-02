@@ -486,6 +486,7 @@ function Index() {
     track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
     setSaid("");
+    setChipUsed(null);
     setOptionalContext("");
     setShowContext(false);
     setSubmittedSentence("");
@@ -636,6 +637,7 @@ function Index() {
                         type="button"
                         onClick={() => {
                           setSaid(chip);
+                          setChipUsed(chip);
                           taRef.current?.focus();
                         }}
                         className="text-[14px] hover:bg-[var(--color-surface-2)] hover:border-[color-mix(in_oklab,var(--color-foreground)_20%,var(--color-border))]"
