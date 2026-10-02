@@ -49,37 +49,55 @@ export type Database = {
           analysis: string | null
           context: string | null
           created_at: string
+          entry_method: string | null
           followups: Json | null
           id: string
           prolific_id: string | null
+          referrer_host: string | null
           safety_flagged: boolean
           sentence: string
           session_id: string
           triage_status: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           analysis?: string | null
           context?: string | null
           created_at?: string
+          entry_method?: string | null
           followups?: Json | null
           id?: string
           prolific_id?: string | null
+          referrer_host?: string | null
           safety_flagged?: boolean
           sentence: string
           session_id: string
           triage_status?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           analysis?: string | null
           context?: string | null
           created_at?: string
+          entry_method?: string | null
           followups?: Json | null
           id?: string
           prolific_id?: string | null
+          referrer_host?: string | null
           safety_flagged?: boolean
           sentence?: string
           session_id?: string
           triage_status?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
