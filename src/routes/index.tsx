@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { captureAttribution, getAttribution } from "@/lib/attribution";
 import { FeedbackChips } from "@/components/FeedbackChips";
 import { logResourceClick } from "@/lib/feedback";
 import { ShareCard } from "@/components/ShareCard";
@@ -224,6 +225,7 @@ function Card({
 function Index() {
   const [state, setState] = useState<AppState>("empty");
   const [said, setSaid] = useState("");
+  const [chipUsed, setChipUsed] = useState<string | null>(null);
   const [optionalContext, setOptionalContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [phraseIdx, setPhraseIdx] = useState(0);
@@ -239,6 +241,7 @@ function Index() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    captureAttribution();
     try {
       const params = new URLSearchParams(window.location.search);
       const raw = params.get("prolific_id") ?? params.get("PROLIFIC_PID");
@@ -306,6 +309,7 @@ function Index() {
     context: string | null,
     followups: Partial<Record<FollowupKey, string>>,
     triageStatus: string,
+    entryMethod: string,
   ): Promise<Analysis> {
     const sessionId = getSessionId();
     let result: Analysis = makeFailureAnalysis();
@@ -322,6 +326,8 @@ function Index() {
           followups,
           triageStatus,
           prolificId,
+          attribution: getAttribution(),
+          entryMethod,
         }),
         signal: controller.signal,
       });
@@ -430,6 +436,11 @@ function Index() {
     await analyzeAndShow(sentence, ctx, {}, triage.status, false);
   }
 
+  function currentEntryMethod(): string {
+    if (chipUsed === null) return "typed";
+    return said.trim() === chipUsed ? "chip_unedited" : "chip_edited";
+  }
+
   async function analyzeAndShow(
     sentence: string,
     ctx: string | null,
@@ -440,7 +451,7 @@ function Index() {
     setUsedFollowups(used);
     setState("loading");
     try {
-      const result = await callAnalyze(sentence, ctx, followups, triageStatus);
+      const result = await callAnalyze(sentence, ctx, followups, triageStatus, currentEntryMethod());
       setAnalysis(result);
       setState("output");
     } catch {
@@ -475,6 +486,7 @@ function Index() {
     track("iho_reset_clicked", { sessionId: getSessionId() });
     setAnalysis(null);
     setSaid("");
+    setChipUsed(null);
     setOptionalContext("");
     setShowContext(false);
     setSubmittedSentence("");
@@ -625,6 +637,7 @@ function Index() {
                         type="button"
                         onClick={() => {
                           setSaid(chip);
+                          setChipUsed(chip);
                           taRef.current?.focus();
                         }}
                         className="text-[14px] hover:bg-[var(--color-surface-2)] hover:border-[color-mix(in_oklab,var(--color-foreground)_20%,var(--color-border))]"

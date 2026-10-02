@@ -384,6 +384,16 @@ interface AnalyzeBody {
   followups?: unknown;
   triageStatus?: unknown;
   prolificId?: unknown;
+  attribution?: unknown;
+  entryMethod?: unknown;
+}
+
+interface AttributionInput {
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  referrerHost: string | null;
 }
 
 interface NormalizedInput {
@@ -393,6 +403,8 @@ interface NormalizedInput {
   followups: FollowupAnswers;
   triageStatus: string | null;
   prolificId: string | null;
+  attribution: AttributionInput;
+  entryMethod: string | null;
 }
 
 function pickAnswer(v: unknown): string | null {
@@ -434,6 +446,13 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
     }
   }
 
+  const attribution = normalizeAttribution(body.attribution);
+  const entryMethod =
+    typeof body.entryMethod === "string" &&
+    ["typed", "chip_unedited", "chip_edited"].includes(body.entryMethod)
+      ? body.entryMethod
+      : null;
+
   return {
     sentence,
     context: ctxRaw ? ctxRaw : null,
@@ -441,6 +460,27 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
     followups,
     triageStatus,
     prolificId,
+    attribution,
+    entryMethod,
+  };
+}
+
+const ATTRIBUTION_RE = /^[a-z0-9 _.\-]+$/;
+
+function cleanAttributionValue(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim().toLowerCase().slice(0, 100);
+  return t && ATTRIBUTION_RE.test(t) ? t : null;
+}
+
+function normalizeAttribution(raw: unknown): AttributionInput {
+  const a = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    utmSource: cleanAttributionValue(a.utmSource),
+    utmMedium: cleanAttributionValue(a.utmMedium),
+    utmCampaign: cleanAttributionValue(a.utmCampaign),
+    utmContent: cleanAttributionValue(a.utmContent),
+    referrerHost: cleanAttributionValue(a.referrerHost),
   };
 }
 
@@ -631,6 +671,11 @@ function alignResourcesToTactic(
   return { ...payload, resources: dedupeResources(combined) };
 }
 
+function sourceLabel(attribution: AttributionInput | null | undefined): string {
+  const base = attribution?.utmSource ?? attribution?.referrerHost ?? "direct / unknown";
+  return attribution?.utmCampaign ? `${base} / ${attribution.utmCampaign}` : base;
+}
+
 async function notifySlack(input: {
   sessionId: string;
   sentence: string;
@@ -638,6 +683,8 @@ async function notifySlack(input: {
   analysis: string;
   safetyFlagged: boolean;
   prolificId?: string | null;
+  attribution?: AttributionInput | null;
+  entryMethod?: string | null;
 }): Promise<void> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const slackKey = process.env.SLACK_API_KEY;
@@ -667,6 +714,8 @@ async function notifySlack(input: {
         ...(input.prolificId
           ? [{ type: "mrkdwn", text: `*Prolific ID:*\n\`${input.prolificId}\`` }]
           : []),
+        { type: "mrkdwn", text: `*Source:*\n${sourceLabel(input.attribution)}` },
+        { type: "mrkdwn", text: `*Entry:*\n${input.entryMethod ?? "unknown"}` },
       ],
     },
     {
@@ -834,6 +883,8 @@ async function logSubmission(input: {
   followups?: FollowupAnswers | null;
   triageStatus?: string | null;
   prolificId?: string | null;
+  attribution?: AttributionInput | null;
+  entryMethod?: string | null;
 }): Promise<void> {
   try {
     await supabaseAdmin.from("iho_submissions").insert({
@@ -845,6 +896,12 @@ async function logSubmission(input: {
       followups: (input.followups ?? null) as never,
       triage_status: input.triageStatus ?? null,
       prolific_id: input.prolificId ?? null,
+      utm_source: input.attribution?.utmSource ?? null,
+      utm_medium: input.attribution?.utmMedium ?? null,
+      utm_campaign: input.attribution?.utmCampaign ?? null,
+      utm_content: input.attribution?.utmContent ?? null,
+      referrer_host: input.attribution?.referrerHost ?? null,
+      entry_method: input.entryMethod ?? null,
     } as never);
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
@@ -856,6 +913,8 @@ async function logSubmission(input: {
     analysis: input.analysis,
     safetyFlagged: input.safetyFlagged,
     prolificId: input.prolificId ?? null,
+    attribution: input.attribution ?? null,
+    entryMethod: input.entryMethod ?? null,
   });
 }
 
@@ -1093,6 +1152,8 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             followups: input.followups,
             triageStatus: input.triageStatus ?? "SAFETY",
             prolificId: input.prolificId,
+            attribution: input.attribution,
+            entryMethod: input.entryMethod,
           });
           return buildResponse(analysis, true);
         }
@@ -1114,6 +1175,8 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           followups: input.followups,
           triageStatus: input.triageStatus,
           prolificId: input.prolificId,
+          attribution: input.attribution,
+          entryMethod: input.entryMethod,
         });
 
         return buildResponse(analysis, false);
