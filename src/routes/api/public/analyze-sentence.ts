@@ -883,6 +883,8 @@ async function logSubmission(input: {
   followups?: FollowupAnswers | null;
   triageStatus?: string | null;
   prolificId?: string | null;
+  attribution?: AttributionInput | null;
+  entryMethod?: string | null;
 }): Promise<void> {
   try {
     await supabaseAdmin.from("iho_submissions").insert({
@@ -894,6 +896,12 @@ async function logSubmission(input: {
       followups: (input.followups ?? null) as never,
       triage_status: input.triageStatus ?? null,
       prolific_id: input.prolificId ?? null,
+      utm_source: input.attribution?.utmSource ?? null,
+      utm_medium: input.attribution?.utmMedium ?? null,
+      utm_campaign: input.attribution?.utmCampaign ?? null,
+      utm_content: input.attribution?.utmContent ?? null,
+      referrer_host: input.attribution?.referrerHost ?? null,
+      entry_method: input.entryMethod ?? null,
     } as never);
   } catch (err) {
     console.error("[analyze-sentence] log failed", err);
@@ -905,6 +913,8 @@ async function logSubmission(input: {
     analysis: input.analysis,
     safetyFlagged: input.safetyFlagged,
     prolificId: input.prolificId ?? null,
+    attribution: input.attribution ?? null,
+    entryMethod: input.entryMethod ?? null,
   });
 }
 
@@ -1142,6 +1152,8 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
             followups: input.followups,
             triageStatus: input.triageStatus ?? "SAFETY",
             prolificId: input.prolificId,
+            attribution: input.attribution,
+            entryMethod: input.entryMethod,
           });
           return buildResponse(analysis, true);
         }
@@ -1163,6 +1175,8 @@ export const Route = createFileRoute("/api/public/analyze-sentence")({
           followups: input.followups,
           triageStatus: input.triageStatus,
           prolificId: input.prolificId,
+          attribution: input.attribution,
+          entryMethod: input.entryMethod,
         });
 
         return buildResponse(analysis, false);
