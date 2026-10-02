@@ -384,6 +384,16 @@ interface AnalyzeBody {
   followups?: unknown;
   triageStatus?: unknown;
   prolificId?: unknown;
+  attribution?: unknown;
+  entryMethod?: unknown;
+}
+
+interface AttributionInput {
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  referrerHost: string | null;
 }
 
 interface NormalizedInput {
@@ -393,6 +403,8 @@ interface NormalizedInput {
   followups: FollowupAnswers;
   triageStatus: string | null;
   prolificId: string | null;
+  attribution: AttributionInput;
+  entryMethod: string | null;
 }
 
 function pickAnswer(v: unknown): string | null {
