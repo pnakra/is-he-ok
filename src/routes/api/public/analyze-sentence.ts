@@ -671,6 +671,11 @@ function alignResourcesToTactic(
   return { ...payload, resources: dedupeResources(combined) };
 }
 
+function sourceLabel(attribution: AttributionInput | null | undefined): string {
+  const base = attribution?.utmSource ?? attribution?.referrerHost ?? "direct / unknown";
+  return attribution?.utmCampaign ? `${base} / ${attribution.utmCampaign}` : base;
+}
+
 async function notifySlack(input: {
   sessionId: string;
   sentence: string;
