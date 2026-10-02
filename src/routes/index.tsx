@@ -225,6 +225,7 @@ function Card({
 function Index() {
   const [state, setState] = useState<AppState>("empty");
   const [said, setSaid] = useState("");
+  const [chipUsed, setChipUsed] = useState<string | null>(null);
   const [optionalContext, setOptionalContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [phraseIdx, setPhraseIdx] = useState(0);
@@ -308,6 +309,7 @@ function Index() {
     context: string | null,
     followups: Partial<Record<FollowupKey, string>>,
     triageStatus: string,
+    entryMethod: string,
   ): Promise<Analysis> {
     const sessionId = getSessionId();
     let result: Analysis = makeFailureAnalysis();
