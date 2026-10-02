@@ -446,6 +446,13 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
     }
   }
 
+  const attribution = normalizeAttribution(body.attribution);
+  const entryMethod =
+    typeof body.entryMethod === "string" &&
+    ["typed", "chip_unedited", "chip_edited"].includes(body.entryMethod)
+      ? body.entryMethod
+      : null;
+
   return {
     sentence,
     context: ctxRaw ? ctxRaw : null,
@@ -453,6 +460,27 @@ function normalize(body: AnalyzeBody): NormalizedInput | null {
     followups,
     triageStatus,
     prolificId,
+    attribution,
+    entryMethod,
+  };
+}
+
+const ATTRIBUTION_RE = /^[a-z0-9 _.\-]+$/;
+
+function cleanAttributionValue(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim().toLowerCase().slice(0, 100);
+  return t && ATTRIBUTION_RE.test(t) ? t : null;
+}
+
+function normalizeAttribution(raw: unknown): AttributionInput {
+  const a = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    utmSource: cleanAttributionValue(a.utmSource),
+    utmMedium: cleanAttributionValue(a.utmMedium),
+    utmCampaign: cleanAttributionValue(a.utmCampaign),
+    utmContent: cleanAttributionValue(a.utmContent),
+    referrerHost: cleanAttributionValue(a.referrerHost),
   };
 }
 
@@ -650,6 +678,8 @@ async function notifySlack(input: {
   analysis: string;
   safetyFlagged: boolean;
   prolificId?: string | null;
+  attribution?: AttributionInput | null;
+  entryMethod?: string | null;
 }): Promise<void> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const slackKey = process.env.SLACK_API_KEY;
@@ -679,6 +709,8 @@ async function notifySlack(input: {
         ...(input.prolificId
           ? [{ type: "mrkdwn", text: `*Prolific ID:*\n\`${input.prolificId}\`` }]
           : []),
+        { type: "mrkdwn", text: `*Source:*\n${sourceLabel(input.attribution)}` },
+        { type: "mrkdwn", text: `*Entry:*\n${input.entryMethod ?? "unknown"}` },
       ],
     },
     {
